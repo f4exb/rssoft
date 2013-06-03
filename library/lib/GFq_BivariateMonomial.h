@@ -32,57 +32,136 @@ namespace gf
 {
 
 /**
- * \brief Bivariate monomials with coefficient in GF(2^m)
+ * \brief Bivariate monomial exponents
  */
-class GFq_BivariateMonomial
+class GFq_BivariateMonomialExponents : public std::pair<unsigned int, unsigned int>
 {
 public:
-	/**
-	 * Constructs a new bivariate monomial
-	 * \param coeff Coefficient
-	 * \param x_pow Power in X
-	 * \param y_pow Power in Y
-	 */
-	GFq_BivariateMonomial(const GFq_Element& coeff, unsigned int x_pow, unsigned int y_pow);
+	GFq_BivariateMonomialExponents(unsigned int eX, unsigned int eY);
+	GFq_BivariateMonomialExponents(const std::pair<unsigned int, unsigned int>& _exponents);
 
 	/**
-	 * Destructor
+	 * Returns the exponent in x
 	 */
-	~GFq_BivariateMonomial();
-
-	/**
-	 * Returns power in X
-	 */
-	unsigned int x_pow() const
+	unsigned int x() const
 	{
-		return exponents.first;
+		return first;
 	}
 
 	/**
-	 * Returns power in Y
+	 * Returns the exponent in y
 	 */
-	unsigned int y_pow() const
+	unsigned int y() const
 	{
-		return exponents.second;
+		return second;
 	}
 
 	/**
-	 * Weighted degree of monomial
+	 * Returns the weighted degree
+	 * \param wX Weight in X
+	 * \param wY Weight in Y
 	 */
-	unsigned int wdeg(unsigned int w_x, unsigned int w_y) const
+	unsigned int wdeg(unsigned int wX, unsigned int wY) const
 	{
-		return w_x*exponents.first + w_y*exponents.second;
+		return wX*first + wY*second;
 	}
 
 	/**
-	 * Prints a monomial to an output stream
+	 * Returns the weighted degree
+	 * \param weihgts Pair of weights in (X,Y)
 	 */
-	friend std::ostream& operator <<(std::ostream& os, const GFq_BivariateMonomial& monomial);
+	unsigned int wdeg(const std::pair<unsigned int, unsigned int>& weights) const
+	{
+		return weights.first*first + weights.second*second;
+	}
 
-protected:
-	std::pair<unsigned int, unsigned int> exponents;
-	GFq_Element coefficient;
+	/**
+	 * Tests if both exponents are 0 (monomial represents the constant coefficient)
+	 */
+	bool are_zero() const
+	{
+		return (first == 0) && (second == 0);
+	}
 };
+
+/**
+ * Monomial representation as a (key, value) pair where key is the pair of exponents and value the coefficient
+ * It serves the purpose to be directly usable in the bivariate polynomial's map of monomials
+ */
+typedef std::pair<GFq_BivariateMonomialExponents, GFq_Element> GFq_BivariateMonomialKeyValueRepresentation;
+
+/**
+ * \brief Bivariate Monomial class
+ */
+class GFq_BivariateMonomial : public std::pair<GFq_BivariateMonomialExponents, GFq_Element>
+{
+public:
+	GFq_BivariateMonomial(const GFq_Element& coeff, unsigned int eX, unsigned int eY);
+	GFq_BivariateMonomial(const GFq_Element& coeff, const GFq_BivariateMonomialExponents& exponents);
+	GFq_BivariateMonomial(const GFq_BivariateMonomialKeyValueRepresentation& monomial_rep);
+
+	const GFq_Element& coeff() const
+	{
+		return second;
+	}
+
+	unsigned int eX() const
+	{
+		return first.first;
+	}
+
+	unsigned int eY() const
+	{
+		return first.second;
+	}
+
+	const GFq_BivariateMonomialExponents& get_exponents() const
+	{
+		return first;
+	}
+
+	unsigned int wdeg(unsigned int wX, unsigned int wY) const
+	{
+		return first.wdeg(wX, wY);
+	}
+
+	unsigned int wdeg(const std::pair<unsigned int, unsigned int>& weights) const
+	{
+		return first.wdeg(weights);
+	}
+
+	GFq_BivariateMonomial& operator =(const GFq_BivariateMonomial& monomial);
+	GFq_BivariateMonomial& operator+=(const GFq_BivariateMonomial& monomial);
+	GFq_BivariateMonomial& operator+=(const GFq_Element& gfe);
+	GFq_BivariateMonomial& operator-=(const GFq_BivariateMonomial& monomial);
+	GFq_BivariateMonomial& operator-=(const GFq_Element& gfe);
+	GFq_BivariateMonomial& operator*=(const GFq_BivariateMonomial& monomial);
+	GFq_BivariateMonomial& operator*=(const GFq_Element& gfe);
+	GFq_BivariateMonomial& operator/=(const GFq_BivariateMonomial& monomial);
+	GFq_BivariateMonomial& operator/=(const GFq_Element& gfe);
+};
+
+GFq_BivariateMonomial operator +(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator +(const GFq_BivariateMonomial& a, const GF2_Element& b);
+GFq_BivariateMonomial operator +(const GF2_Element& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator -(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator -(const GFq_BivariateMonomial& a, const GF2_Element& b);
+GFq_BivariateMonomial operator -(const GF2_Element& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator *(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator *(const GF2_Element& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator *(const GFq_BivariateMonomial& a, const GF2_Element& b);
+GFq_BivariateMonomial operator /(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator /(const GFq_BivariateMonomial& a, const GF2_Element& b);
+
+/**
+ * Prints monomials to output stream
+ */
+std::ostream& operator <<(std::ostream& os, const GFq_BivariateMonomialKeyValueRepresentation& monomial);
+
+/**
+ * Helper to create a monomial representation
+ */
+GFq_BivariateMonomialKeyValueRepresentation make_bivariate_monomial(GFq_Element coeff, unsigned int exp_x, unsigned int exp_y);
 
 /**
  * \brief Weighted reverse lexical order of bivariate monomials
@@ -98,11 +177,17 @@ public:
 	GFq_WeightedRevLex_BivariateMonomial(unsigned int w_x, unsigned int w_y);
 
 	/**
-	 * Ordering method
-	 * \param m1 First monomial, if lesser than second then return is true
-	 * \param m2 Second monomial, if greated than first then return is true
+	 * Constructs a new weighted reverse lexical order of bivariate monomials
+	 * \param weights Weights in (X,Y)
 	 */
-	bool operator()(const GFq_BivariateMonomial& m1, const GFq_BivariateMonomial& m2) const;
+	GFq_WeightedRevLex_BivariateMonomial(const std::pair<unsigned int, unsigned int>& weights);
+
+	/**
+	 * Ordering method
+	 * \param e1 First monomial exponents, if lesser than second then return is true
+	 * \param e2 Second monomial exponents, if greater than first then return is true
+	 */
+	bool operator()(const GFq_BivariateMonomialExponents& e1, const GFq_BivariateMonomialExponents& e2) const;
 
 	/**
 	 * Destructor

@@ -92,13 +92,13 @@ GFq_Polynomial::GFq_Polynomial(const GFq_Element& gfe) :
 }
 
 // ================================================================================================
-bool GFq_Polynomial::valid() const
+bool GFq_Polynomial::is_valid() const
 {
 	return (poly.size() > 0);
 }
 
 // ================================================================================================
-bool GFq_Polynomial::null() const
+bool GFq_Polynomial::is_zero() const
 {
 	return (poly.size() == 0) || ((poly.size() == 1) && (poly[0] == 0));
 }
@@ -677,17 +677,17 @@ GFq_Polynomial gcd(const GFq_Polynomial& a, const GFq_Polynomial& b)
 {
 	if ((a.field()) == (b.field()))
 	{
-		if (a.null() && b.null())
+		if (a.is_zero() && b.is_zero())
 		{
 			throw GF_Exception("GCD with both zero operand polynomials");
 		}
 
-		if (a.null())
+		if (a.is_zero())
 		{
 			return b;
 		}
 
-		if (b.null())
+		if (b.is_zero())
 		{
 			return a;
 		}
@@ -696,7 +696,7 @@ GFq_Polynomial gcd(const GFq_Polynomial& a, const GFq_Polynomial& b)
 		GFq_Polynomial x = ((a.deg() < b.deg()) ? b : a);
 		GFq_Polynomial t = ((a.deg() < b.deg()) ? b : a);
 
-		while (!r.null())
+		while (!r.is_zero())
 		{
 			t = r;
 			r = x % t;
@@ -736,7 +736,7 @@ std::pair<GFq_Polynomial, GFq_Polynomial> div(const GFq_Polynomial& dividend,
 			GFq_Polynomial remainder(dividend);
 			GFq_Polynomial quotient(dividend.field(), dividend.deg() - divisor.deg() + 1);
 
-			while (remainder.valid() && (remainder.deg() >= divisor.deg()))
+			while (remainder.is_valid() && (remainder.deg() >= divisor.deg()))
 			{
 				quotient[remainder.deg() - divisor.deg()] = remainder[remainder.deg()] / divisor[divisor.deg()];
 

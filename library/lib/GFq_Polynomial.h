@@ -104,12 +104,12 @@ public:
 	/**
 	 * Tells if the polynomial has coefficients
 	 */
-	bool valid() const;
+	bool is_valid() const;
 
 	/**
-	 * Tells if the polynomial has no coefficients or a null coefficient
+	 * Tells if the polynomial has no coefficients or a null coefficient P(X)=0
 	 */
-	bool null() const;
+	bool is_zero() const;
 
 	/**
 	 * Tells if the polynomial is P(X)=1

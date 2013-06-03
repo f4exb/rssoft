@@ -28,13 +28,215 @@ namespace gf
 {
 
 // ================================================================================================
-GFq_BivariateMonomial::GFq_BivariateMonomial(const GFq_Element& coeff, unsigned int x_pow, unsigned int y_pow) :
-		coefficient(coeff), exponents(x_pow, y_pow)
+GFq_BivariateMonomialExponents::GFq_BivariateMonomialExponents(unsigned int eX, unsigned int eY) :
+	std::pair<unsigned int, unsigned int>(eX, eY)
 {}
 
 // ================================================================================================
-GFq_BivariateMonomial::~GFq_BivariateMonomial()
+GFq_BivariateMonomialExponents::GFq_BivariateMonomialExponents(const std::pair<unsigned int, unsigned int>& _exponents) :
+	std::pair<unsigned int, unsigned int>(_exponents)
 {}
+
+// ================================================================================================
+GFq_BivariateMonomial::GFq_BivariateMonomial(const GFq_Element& coeff, unsigned int eX, unsigned int eY) :
+	std::pair<GFq_BivariateMonomialExponents, GFq_Element>(GFq_BivariateMonomialExponents(eX, eY), coeff)
+{}
+
+// ================================================================================================
+GFq_BivariateMonomial::GFq_BivariateMonomial(const GFq_Element& coeff, const GFq_BivariateMonomialExponents& exponents) :
+	std::pair<GFq_BivariateMonomialExponents, GFq_Element>(exponents, coeff)
+{}
+
+// ================================================================================================
+GFq_BivariateMonomial::GFq_BivariateMonomial(const GFq_BivariateMonomialKeyValueRepresentation& monomial_rep) :
+	std::pair<GFq_BivariateMonomialExponents, GFq_Element>(monomial_rep)
+{}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator =(const GFq_BivariateMonomial& monomial)
+{
+	*this = monomial;
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator +=(const GFq_BivariateMonomial& monomial)
+{
+	if (first != monomial.first)
+	{
+		throw GF_Exception("Cannot add monomials of different exponents");
+	}
+	else
+	{
+		second += monomial.second;
+	}
+
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator+=(const GFq_Element& gfe)
+{
+	second += gfe;
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator -=(const GFq_BivariateMonomial& monomial)
+{
+	*this += monomial;
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator-=(const GFq_Element& gfe)
+{
+	*this += gfe;
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator *=(const GFq_BivariateMonomial& monomial)
+{
+	second *= monomial.second;
+	first.first += monomial.first.first;
+	first.second += monomial.first.second;
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator*=(const GFq_Element& gfe)
+{
+	second *= gfe;
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator /=(const GFq_BivariateMonomial& monomial)
+{
+	if (monomial.second == 0)
+	{
+		throw GF_Exception("Zero divide monomial");
+	}
+
+	second /= monomial.second;
+
+	if (first.first - monomial.first.first < 0)
+	{
+		throw GF_Exception("Cannot divide by a monomial with a higher degree in X");
+	}
+	else if (first.second - monomial.first.second < 0)
+	{
+		throw GF_Exception("Cannot divide by a monomial with a higher degree in Y");
+	}
+	else
+	{
+		first.first -= monomial.first.first;
+		first.second -= monomial.first.second;
+	}
+
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial& GFq_BivariateMonomial::operator/=(const GFq_Element& gfe)
+{
+	if (gfe == 0)
+	{
+		throw GF_Exception("Zero divide monomial");
+	}
+
+	second /= gfe;
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator +(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariateMonomial result(a);
+	result += b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator +(const GFq_BivariateMonomial& a, const GFq_Element& b)
+{
+	GFq_BivariateMonomial result(a);
+	result += b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator +(const GFq_Element& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariateMonomial result(b);
+	result += a;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator -(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariateMonomial result(a);
+	result -= b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator -(const GFq_BivariateMonomial& a, const GFq_Element& b)
+{
+	GFq_BivariateMonomial result(a);
+	result -= b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator -(const GFq_Element& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariateMonomial result(b);
+	result -= a;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator *(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariateMonomial result(a);
+	result *= b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator *(const GFq_BivariateMonomial& a, const GFq_Element& b)
+{
+	GFq_BivariateMonomial result(a);
+	result *= b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator *(const GFq_Element& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariateMonomial result(b);
+	result *= a;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator /(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariateMonomial result(a);
+	result /= b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariateMonomial operator /(const GFq_BivariateMonomial& a, const GFq_Element& b)
+{
+	GFq_BivariateMonomial result(a);
+	result /= b;
+	return result;
+}
 
 // ================================================================================================
 GFq_WeightedRevLex_BivariateMonomial::GFq_WeightedRevLex_BivariateMonomial(unsigned int w_x, unsigned int w_y) :
@@ -42,18 +244,23 @@ GFq_WeightedRevLex_BivariateMonomial::GFq_WeightedRevLex_BivariateMonomial(unsig
 {}
 
 // ================================================================================================
+GFq_WeightedRevLex_BivariateMonomial::GFq_WeightedRevLex_BivariateMonomial(const std::pair<unsigned int, unsigned int>& _weights) :
+		weights(_weights)
+{}
+
+// ================================================================================================
 GFq_WeightedRevLex_BivariateMonomial::~GFq_WeightedRevLex_BivariateMonomial()
 {}
 
 // ================================================================================================
-bool GFq_WeightedRevLex_BivariateMonomial::operator()(const GFq_BivariateMonomial& m1, const GFq_BivariateMonomial& m2) const
+bool GFq_WeightedRevLex_BivariateMonomial::operator()(const GFq_BivariateMonomialExponents& e1, const GFq_BivariateMonomialExponents& e2) const
 {
-	unsigned int w1 = m1.wdeg(weights.first, weights.second);
-	unsigned int w2 = m2.wdeg(weights.first, weights.second);
+	unsigned int w1 = e1.wdeg(weights.first, weights.second);
+	unsigned int w2 = e2.wdeg(weights.first, weights.second);
 
 	if (w1 == w2)
 	{
-		return m1.x_pow() > m2.x_pow();
+		return e1.x() > e2.x();
 	}
 	else
 	{
@@ -62,49 +269,66 @@ bool GFq_WeightedRevLex_BivariateMonomial::operator()(const GFq_BivariateMonomia
 }
 
 // ================================================================================================
-std::ostream& operator <<(std::ostream& os, const GFq_BivariateMonomial& monomial)
+std::ostream& operator <<(std::ostream& os, const GFq_BivariateMonomialKeyValueRepresentation& monomial)
 {
-	if (monomial.coefficient.is_zero())
+	if (monomial.second.is_zero())
 	{
-		if ((monomial.exponents.first == 0) && (monomial.exponents.second == 0))
+		if (monomial.first.are_zero())
 		{
 			os << "0";
 		}
 	}
-	else if (monomial.coefficient == 1)
+	else if (monomial.second == 1)
 	{
-		if ((monomial.exponents.first == 0) && (monomial.exponents.second == 0))
+		if (monomial.first.are_zero())
 		{
 			os << "1";
 		}
 	}
 	else
 	{
-		os << monomial.coefficient << "*";
-	}
+		os << monomial.second;
 
-	if (monomial.exponents.first > 0)
-	{
-		os << "X";
-
-		if (monomial.exponents.first > 1)
+		if (!monomial.first.are_zero())
 		{
-			os << "^" << monomial.exponents.first;
+			os << "*";
 		}
 	}
 
-	if (monomial.exponents.second > 0)
+	if (monomial.first.x() > 0)
 	{
-		os << "*Y";
+		os << "X";
 
-		if (monomial.exponents.second > 1)
+		if (monomial.first.x() > 1)
 		{
-			os << "^" << monomial.exponents.second;
+			os << "^" << monomial.first.x();
+		}
+	}
+
+	if ((monomial.first.x() > 0) && (monomial.first.y() > 0))
+	{
+		os << "*";
+	}
+
+	if (monomial.first.y() > 0)
+	{
+		os << "Y";
+
+		if (monomial.first.y() > 1)
+		{
+			os << "^" << monomial.first.y();
 		}
 	}
 
 	return os;
 }
+
+// ================================================================================================
+GFq_BivariateMonomialKeyValueRepresentation make_bivariate_monomial(GFq_Element coeff, unsigned int exp_x, unsigned int exp_y)
+{
+	return std::make_pair(std::make_pair(exp_x, exp_y), coeff);
+}
+
 
 } // namespace gf
 } // namsepace rssoft

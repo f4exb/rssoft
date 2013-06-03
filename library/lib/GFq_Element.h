@@ -201,6 +201,11 @@ public:
 		return poly_value == 0;
 	}
 
+	inline bool is_one() const
+	{
+		return poly_value == 1;
+	}
+
 	friend std::ostream& operator <<(std::ostream& os,
 			const GFq_Element& gfe);
 
