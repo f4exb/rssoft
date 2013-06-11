@@ -76,6 +76,14 @@ GFq_Polynomial::GFq_Polynomial(const GFq& _gf, const unsigned int size, GFq_Elem
 }
 
 // ================================================================================================
+GFq_Polynomial::GFq_Polynomial(const GFq& _gf, const std::vector<GFq_Element>& gfe) :
+		gf(_gf),
+		alpha_format(false),
+		poly(gfe.begin(), gfe.end())
+{
+}
+
+// ================================================================================================
 GFq_Polynomial::GFq_Polynomial(const GFq_Polynomial& polynomial) :
 		gf(polynomial.gf)
 {
@@ -90,6 +98,13 @@ GFq_Polynomial::GFq_Polynomial(const GFq_Element& gfe) :
 	poly.clear();
 	poly.push_back(gfe);
 }
+
+// ================================================================================================
+void GFq_Polynomial::init(const std::vector<GFq_Element>& _poly)
+{
+	poly = _poly;
+}
+
 
 // ================================================================================================
 bool GFq_Polynomial::is_valid() const

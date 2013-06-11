@@ -22,6 +22,8 @@
  */
 
 #include "GFq_BivariatePolynomial.h"
+#include "GF_Utils.h"
+#include <set>
 
 namespace rssoft
 {
@@ -329,6 +331,25 @@ GFq_BivariatePolynomial& GFq_BivariatePolynomial::operator*=(const GFq_Bivariate
 }
 
 // ================================================================================================
+GFq_BivariatePolynomial& GFq_BivariatePolynomial::operator*=(const GFq_BivariateMonomial& monomial)
+{
+	GFq_WeightedRevLex_BivariateMonomial mono_exp_compare(weights);
+	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> product_monomials(mono_exp_compare);
+	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>::const_iterator mono_it = monomials.begin();
+	
+	for (; mono_it != monomials.end(); ++mono_it)
+	{
+		unsigned int eX = mono_it->first.first + monomial.eX();
+		unsigned int eY = mono_it->first.second + monomial.eY();
+		product_monomials.insert(std::make_pair(std::make_pair(eX, eY), mono_it->second * monomial.coeff()));
+	}
+	
+	monomials = product_monomials;
+	
+	return *this;
+}
+
+// ================================================================================================
 GFq_BivariatePolynomial& GFq_BivariatePolynomial::operator*=(const GFq_Element& gfe)
 {
 	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>::iterator mono_it = monomials.begin();
@@ -361,6 +382,183 @@ GFq_BivariatePolynomial& GFq_BivariatePolynomial::operator/=(const GFq_Element& 
 	for (; mono_it != monomials.end(); ++mono_it)
 	{
 		mono_it->second /= gfe;
+	}
+
+	return *this;
+}
+
+// ================================================================================================
+bool GFq_BivariatePolynomial::operator==(const GFq_BivariatePolynomial& polynomial) const
+{
+	return (weights == polynomial.weights) && (monomials == polynomial.monomials);
+}
+
+// ================================================================================================
+bool GFq_BivariatePolynomial::operator!=(const GFq_BivariatePolynomial& polynomial) const
+{
+	return (weights != polynomial.weights) || (monomials != polynomial.monomials);
+}
+
+// ================================================================================================
+const GFq_Element GFq_BivariatePolynomial::operator()(const GFq_Element& x_value, const GFq_Element& y_value) const
+{
+	if (x_value.field() != y_value.field())
+	{
+		throw GF_Exception("point coordinates must be of the same Galois Field to evaluate bivariate polynomial at this point");
+	}
+
+	GFq_Element result(x_value.field(), 0);
+	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>::const_iterator mono_it = monomials.begin();
+
+	for (; mono_it != monomials.end(); ++mono_it)
+	{
+		GFq_Element mono_result = (x_value^mono_it->first.first) * (y_value^mono_it->first.second) * (mono_it->second);
+		result += mono_result;
+	}
+
+	return result;
+}
+
+// ================================================================================================
+const GFq_Polynomial GFq_BivariatePolynomial::get_X_0() const
+{
+	return get_v_0(true);
+}
+
+// ================================================================================================
+const GFq_Polynomial GFq_BivariatePolynomial::get_0_Y() const
+{
+	return get_v_0(false);
+}
+
+// ================================================================================================
+const GFq_Polynomial GFq_BivariatePolynomial::get_v_0(bool x_terms) const
+{
+	if (monomials.size() == 0)
+	{
+		throw GF_Exception("Bivariate polynomial is invalid");
+	}
+	else
+	{
+		std::map<unsigned int, GFq_Element> poly_map;
+		std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>::const_iterator mono_it = monomials.begin();
+		const GFq& gf = mono_it->second.field();
+		GFq_Element zero(gf,0);
+
+		for (; mono_it != monomials.end(); ++mono_it)
+		{
+			if (x_terms)
+			{
+				if (mono_it->first.second == 0) // no Y term
+				{
+					poly_map.insert(std::make_pair(mono_it->first.first, mono_it->second));
+				}
+			}
+			else
+			{
+				if (mono_it->first.first == 0) // no X term
+				{
+					poly_map.insert(std::make_pair(mono_it->first.second, mono_it->second));
+				}
+			}
+		}
+
+		if (poly_map.size() == 0)
+		{
+			return GFq_Polynomial(zero);
+		}
+		else
+		{
+			unsigned int max_pow = poly_map.rbegin()->first;
+			std::vector<GFq_Element> poly(max_pow+1, zero);
+			std::map<unsigned int, GFq_Element>::const_iterator x_map_it = poly_map.begin();
+
+			for (; x_map_it != poly_map.end(); ++x_map_it)
+			{
+				poly[x_map_it->first] = x_map_it->second;
+			}
+
+			return GFq_Polynomial(gf, poly);
+		}
+	}
+}
+
+// ================================================================================================
+GFq_BivariatePolynomial& GFq_BivariatePolynomial::make_star()
+{
+	if (monomials.size() == 0)
+	{
+		throw GF_Exception("Bivariate polynomial is invalid");
+	}
+	else
+	{
+		std::set<unsigned int> x_exp_set;
+		std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>::const_iterator mono_it = monomials.begin();
+		const GFq& gf = mono_it->second.field();
+		
+		for (; mono_it != monomials.end(); ++mono_it)
+		{
+			x_exp_set.insert(mono_it->first.first);
+		}
+		
+		unsigned int h = *(x_exp_set.begin());
+		
+		if (h > 0)
+		{
+			GFq_WeightedRevLex_BivariateMonomial mono_exp_compare(weights);
+			std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> div_monomials(mono_exp_compare);
+			mono_it = monomials.begin();
+			
+			for (; mono_it != monomials.end(); ++mono_it)
+			{
+				div_monomials.insert(std::make_pair(std::make_pair(mono_it->first.first-h, mono_it->first.second), mono_it->second));
+			}
+			
+			monomials = div_monomials;
+		}
+	}
+	
+	return *this;
+}
+
+// ================================================================================================
+GFq_BivariatePolynomial& GFq_BivariatePolynomial::make_dHasse(unsigned int mu, unsigned int nu)
+{
+	if (monomials.size() == 0)
+	{
+		throw GF_Exception("Bivariate polynomial is invalid");
+	}
+	else
+	{
+		GFq_WeightedRevLex_BivariateMonomial mono_exp_compare(weights);
+		std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> hasse_monomials(mono_exp_compare);
+		std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>::const_iterator mono_it = monomials.begin();
+		const GFq& gf = mono_it->second.field();
+
+		for (; mono_it != monomials.end(); ++mono_it)
+		{
+			unsigned int eX = mono_it->first.first;
+			unsigned int eY = mono_it->first.second;
+
+			if (!(eX < mu) && !(eY < nu))
+			{
+				// coefficient is not null if both binomial coefficients are even
+				if (!(binomial_coeff_parity(eX,mu)) && !(binomial_coeff_parity(eY,nu)))
+				{
+					hasse_monomials.insert(std::make_pair(std::make_pair(eX-mu, eY-nu), mono_it->second));
+				}
+			}
+		}
+
+		if (hasse_monomials.size() == 0)
+		{
+			monomials.clear();
+			monomials.insert(std::make_pair(std::make_pair(0,0), GFq_Element(gf, 0)));
+		}
+		else
+		{
+			monomials = hasse_monomials;
+		}
 	}
 
 	return *this;
@@ -475,6 +673,15 @@ GFq_BivariatePolynomial operator*(const GFq_BivariatePolynomial& a, const GFq_Bi
 }
 
 // ================================================================================================
+GFq_BivariatePolynomial operator*(const GFq_BivariatePolynomial& a, const GFq_BivariateMonomial& b)
+{
+	GFq_BivariatePolynomial result(a);
+	result.init(a);
+	result *= b;
+	return result;
+}
+
+// ================================================================================================
 GFq_BivariatePolynomial operator*(const GFq_BivariatePolynomial& a, const GFq_Element& b)
 {
 	GFq_BivariatePolynomial result(a);
@@ -510,6 +717,24 @@ GFq_BivariatePolynomial operator /(const GFq_BivariatePolynomial& a, const GFq_E
 	GFq_BivariatePolynomial result(a);
 	result.init(a);
 	result /= b;
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariatePolynomial star(const GFq_BivariatePolynomial& a)
+{
+	GFq_BivariatePolynomial result(a);
+	result.init(a);
+	result.make_star();
+	return result;
+}
+
+// ================================================================================================
+GFq_BivariatePolynomial dHasse(unsigned int mu, unsigned int nu, const GFq_BivariatePolynomial& a)
+{
+	GFq_BivariatePolynomial result(a);
+	result.init(a);
+	result.make_dHasse(mu, nu);
 	return result;
 }
 

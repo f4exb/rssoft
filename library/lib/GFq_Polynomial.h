@@ -82,6 +82,13 @@ public:
 	GFq_Polynomial(const GFq& _gf, const unsigned int size, GFq_Element* gfe = NULL);
 
 	/**
+	 * Constructs a new polynomial with coefficients in the specified GF(2^m) with the specified coefficients
+	 * \param _gf The coefficients GF(2^m)
+	 * \param gfe Coefficients vector in increasing powers of variable
+	 */
+	GFq_Polynomial(const GFq& _gf, const std::vector<GFq_Element>& gfe);
+
+	/**
 	 * Copy constructor
 	 * \param polynomial Reference of the polynomial to copy
 	 */
@@ -100,6 +107,11 @@ public:
 	{
 	}
 	;
+
+	/**
+	 * Initializes polynomial with a vector of coefficients in increasing power of variable
+	 */
+	void init(const std::vector<GFq_Element>& _poly);
 
 	/**
 	 * Tells if the polynomial has coefficients

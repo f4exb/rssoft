@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
 	rssoft::gf::GFq_BivariateMonomial m_Y(rssoft::gf::GFq_Element(gf8,1),0,1);   // Y
 
 	rssoft::gf::GFq_Element a(gf8,2);
+	rssoft::gf::GFq_Element one(gf8,1);
 
 	std::cout << "m_XY  = " << m_XY << " wdeg = " << m_XY.first.wdeg(1,k-1) << std::endl;
 	std::cout << "m_aXY = " << m_aXY << " wdeg = " << m_aXY.first.wdeg(1,k-1) << std::endl;
@@ -84,6 +85,7 @@ int main(int argc, char *argv[])
 	rssoft::gf::GFq_BivariatePolynomial P(1,k-1);
 	P.init(monos_P);
 
+	std::cout << std::endl;
 	std::cout << "P(X,Y) = " << P << std::endl;
 
 	std::vector<rssoft::gf::GFq_BivariateMonomial> monos_Q;
@@ -94,7 +96,7 @@ int main(int argc, char *argv[])
 	Q.init(monos_Q);
 
 	std::cout << "Q(X,Y) = " << Q << std::endl;
-
+	
 	std::cout << "P+Q = " << P+Q << std::endl;
 	std::cout << "P+a = " << P + a << std::endl;
 	std::cout << "Q+a = " << Q + a << std::endl;
@@ -106,12 +108,37 @@ int main(int argc, char *argv[])
 	rssoft::gf::GFq_BivariatePolynomial U(1,k-1);
 	U.init(monos_U);
 
+	std::cout << std::endl;
 	std::cout << "U(X,Y) = " << U << std::endl;
-
 	std::cout << "P*U = " << P*U << std::endl;
 	std::cout << "Q/m_Y = " << Q/m_Y << std::endl;
 	std::cout << "Q/a = " << Q/a << std::endl;
 
+	std::cout << std::endl;
+	std::cout << "P(a,a^2) = " << P(a,a^2) << std::endl;
+	std::cout << "P(a,1) = " << P(a,one) << std::endl;
+	std::cout << "P(1,a^2) = " << P(one,a^2) << std::endl;
+
+	std::cout << std::endl;
+	std::cout << "P(X,0) = " << P.get_X_0() << std::endl;
+	std::cout << "P(0,Y) = " << P.get_0_Y() << std::endl;
+	std::cout << "Q(X,0) = " << Q.get_X_0() << std::endl;
+	std::cout << "Q(0,Y) = " << Q.get_0_Y() << std::endl;
+	
+	rssoft::gf::GFq_BivariatePolynomial P1 = P*m_X2;
+
+	std::cout << std::endl;
+	std::cout << "P1(X,Y) = " << P1 << std::endl;
+	std::cout << "P1*(X,Y) = " << star(P1) << std::endl;
+	std::cout << "P*(X,Y)  = " << star(P) << std::endl;
+	
+	std::cout << std::endl;
+	std::cout << "P(X,Y)^[0,0] = " << dHasse(0,0,P) << std::endl;
+	std::cout << "P(X,Y)^[1,0] = " << dHasse(1,0,P) << std::endl;
+	std::cout << "P(X,Y)^[0,1] = " << dHasse(0,1,P) << std::endl;
+	std::cout << "P(X,Y)^[1,1] = " << dHasse(1,1,P) << std::endl;
+	std::cout << "P(X,Y)^[2,0] = " << dHasse(2,0,P) << std::endl;
+	std::cout << "P(X,Y)^[0,2] = " << dHasse(0,2,P) << std::endl;
 }
 
 

@@ -114,6 +114,15 @@ public:
 	}
 
 	/**
+	 * Get the monomials to be updated
+	 * \return Reference to the set of monomials
+	 */
+	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& get_monomials_for_update() 
+	{
+		return monomials;
+	}
+
+	/**
 	 * Helper method to create the vector of monomials of the sum of polynomials a and b
 	 */
 	static void sum(std::vector<GFq_BivariateMonomial>& sum_monomials, const GFq_BivariatePolynomial& a, const GFq_BivariatePolynomial& b);
@@ -138,6 +147,7 @@ public:
 	GFq_BivariatePolynomial& operator-=(const GFq_BivariatePolynomial& polynomial);
 	GFq_BivariatePolynomial& operator-=(const GFq_Element& gfe);
 	GFq_BivariatePolynomial& operator*=(const GFq_BivariatePolynomial& polynomial);
+	GFq_BivariatePolynomial& operator*=(const GFq_BivariateMonomial& monomial);
 	GFq_BivariatePolynomial& operator*=(const GFq_Element& gfe);
 	GFq_BivariatePolynomial& operator/=(const GFq_BivariateMonomial& monomial);
 	GFq_BivariatePolynomial& operator/=(const GFq_Element& gfe);
@@ -145,12 +155,39 @@ public:
 	bool operator==(const GFq_BivariatePolynomial& polynomial) const;
 	bool operator!=(const GFq_BivariatePolynomial& polynomial) const;
 
+	/**
+	 * Evaluation of bivariate polynomial at a (x,y) point in GFq^2
+	 * \param x_value x coordinate
+	 * \param y_value y coordinate
+	 * \return Value of polynomial at (x,y) point
+	 */
 	const GFq_Element operator()(const GFq_Element& x_value, const GFq_Element& y_value) const;
-	const GFq_Element operator()(GFq_Symbol x_value, GFq_Symbol y_value) const;
 
+	/**
+	 * Evaluation of polynomial for Y=0 as a univariate polynomial in X
+	 * \return Univariate polynomial in X as P(X,0)
+	 */
 	const GFq_Polynomial get_X_0() const;
+	
+	/**
+	 * Evaluation of polynomial for X=0 as a univariate polynomial in Y
+	 * \return Univariate polynomial in Y as P(0,Y)
+	 */
 	const GFq_Polynomial get_0_Y() const;
 
+	/**
+	 * Applies to self the star function as P*(X,Y) = P(X,Y)/X^h where h is the greatest power of X so that X^h divides P
+	 * \return reference to the new polynomial
+	 */
+	GFq_BivariatePolynomial& make_star();
+
+	/**
+	 * Applies to self the [mu,nu] Hasse derivative
+	 * \param mu mu parameter (applies to X factors)
+	 * \param nu nu parameter (applies to Y factors)
+	 * \return reference to the new polynomial
+	 */
+	GFq_BivariatePolynomial& make_dHasse(unsigned int mu, unsigned int nu);
 
 	/**
 	 * Prints a polynomial to an output stream
@@ -160,6 +197,7 @@ public:
 
 
 protected:
+	const GFq_Polynomial get_v_0(bool x_terms) const;
 	std::pair<unsigned int, unsigned int> weights; //<! weights for weighted degree ordering
 	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> monomials; //<! set of monomials
 };
@@ -176,10 +214,28 @@ GFq_BivariatePolynomial operator -(const GFq_BivariatePolynomial& a, const GFq_B
 GFq_BivariatePolynomial operator -(const GFq_BivariatePolynomial& a, const GFq_Element& b);
 GFq_BivariatePolynomial operator -(const GFq_Element& a, const GFq_BivariatePolynomial& b);
 GFq_BivariatePolynomial operator *(const GFq_BivariatePolynomial& a, const GFq_BivariatePolynomial& b);
+GFq_BivariatePolynomial operator *(const GFq_BivariatePolynomial& a, const GFq_BivariateMonomial& b);
 GFq_BivariatePolynomial operator *(const GFq_BivariatePolynomial& a, const GFq_Element& b);
 GFq_BivariatePolynomial operator *(const GFq_Element& a, const GFq_BivariatePolynomial& b);
 GFq_BivariatePolynomial operator /(const GFq_BivariatePolynomial& a, const GFq_BivariateMonomial& b);
 GFq_BivariatePolynomial operator /(const GFq_BivariatePolynomial& a, const GFq_Element& b);
+
+/**
+ * Star function as P*(X,Y) = P(X,Y)/X^h where h is the greatest power of X so that X^h divides P
+ * \param a Input polynomial
+ * \return P*(X,Y)
+ */
+GFq_BivariatePolynomial star(const GFq_BivariatePolynomial& a);
+
+/**
+ * [mu,nu] Hasse derivative
+ * \param mu mu parameter (applies to X factors)
+ * \param nu nu parameter (applies to Y factors)
+ * \param a Input polynomial
+ * \return [mu,nu] Hasse derivative of the polynomial
+ */
+GFq_BivariatePolynomial dHasse(unsigned int mu, unsigned int nu, const GFq_BivariatePolynomial& a);
+
 
 } // namespace gf
 } // namespace rssoft
