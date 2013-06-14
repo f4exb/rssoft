@@ -139,6 +139,25 @@ int main(int argc, char *argv[])
 	std::cout << "P(X,Y)^[1,1] = " << dHasse(1,1,P) << std::endl;
 	std::cout << "P(X,Y)^[2,0] = " << dHasse(2,0,P) << std::endl;
 	std::cout << "P(X,Y)^[0,2] = " << dHasse(0,2,P) << std::endl;
+
+
+	rssoft::gf::GFq_BivariatePolynomial Y0(1,k-1);
+	rssoft::gf::GFq_BivariatePolynomial Y2(1,k-1);
+	rssoft::gf::GFq_BivariatePolynomial X5(1,k-1);
+	Y0.init_y_pow(gf8, 0);
+	Y2.init_y_pow(gf8, 2);
+	X5.init_x_pow(gf8, 5);
+
+	std::cout << std::endl;
+	std::cout << "Y0(X,Y) = " << Y0 << std::endl;
+	std::cout << "Y2(X,Y) = " << Y2 << std::endl;
+	std::cout << "X5(X,Y) = " << X5 << std::endl;
+
+	std::cout << std::endl;
+	std::cout << "lm(P) = " << P.get_leading_monomial() << std::endl;
+	std::cout << "lm(P1) = " << P1.get_leading_monomial() << std::endl;
+	std::cout << "lm(Q) = " << Q.get_leading_monomial() << std::endl;
+	std::cout << "lm(U) = " << U.get_leading_monomial() << std::endl;
 }
 
 

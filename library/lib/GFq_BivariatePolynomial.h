@@ -74,6 +74,34 @@ public:
 	 * Initializes the polynomial with a map of monomials
 	 */
 	void init(const std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& monomials);
+    
+    /**
+     * Initializes the polynomial as X^n
+     * \param gf Galois Field to create the unit GF element as coefficient
+     * \param max_pow power of polynomial's unique monomial
+     */
+    void init_x_pow(const GFq& gf, unsigned int x_pow);
+
+    /**
+     * Initializes the polynomial as Y^n
+     * \param gf Galois Field to create the unit GF element as coefficient
+     * \param max_pow power of polynomial's unique monomial
+     */
+    void init_y_pow(const GFq& gf, unsigned int y_pow);
+
+    /**
+     * Initializes the polynomial as 1+X+..+X^n
+     * \param gf Galois Field to create the unit GF element as coefficient
+     * \param max_pow Maximum power in the series
+     */
+    void init_x_pow_series(const GFq& gf, unsigned int max_pow);
+
+    /**
+     * Initializes the polynomial as 1+Y+..+Y^n
+     * \param gf Galois Field to create the unit GF element as coefficient
+     * \param max_pow Maximum power in the series
+     */
+    void init_y_pow_series(const GFq& gf, unsigned int max_pow);
 
 	/**
 	 * Gets the weights pair in (X,Y) used for weighted monomial ordering
@@ -120,6 +148,15 @@ public:
 	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& get_monomials_for_update() 
 	{
 		return monomials;
+	}
+    
+	/**
+	 * Get a copy of the leading monomial with respect to weighted reverse lexical order
+	 * \return Reference to the leading monomial
+	 */
+	GFq_BivariateMonomial get_leading_monomial() const
+	{
+		return static_cast<GFq_BivariateMonomial>(*(monomials.rbegin()));
 	}
 
 	/**
@@ -181,13 +218,13 @@ public:
 	 */
 	GFq_BivariatePolynomial& make_star();
 
-	/**
-	 * Applies to self the [mu,nu] Hasse derivative
-	 * \param mu mu parameter (applies to X factors)
-	 * \param nu nu parameter (applies to Y factors)
-	 * \return reference to the new polynomial
-	 */
-	GFq_BivariatePolynomial& make_dHasse(unsigned int mu, unsigned int nu);
+ 	/**
+ 	 * Applies to self the [mu,nu] Hasse derivative
+ 	 * \param mu mu parameter (applies to X factors)
+ 	 * \param nu nu parameter (applies to Y factors)
+ 	 * \return reference to the new polynomial
+ 	 */
+ 	GFq_BivariatePolynomial& make_dHasse(unsigned int mu, unsigned int nu);
 
 	/**
 	 * Prints a polynomial to an output stream
@@ -235,7 +272,6 @@ GFq_BivariatePolynomial star(const GFq_BivariatePolynomial& a);
  * \return [mu,nu] Hasse derivative of the polynomial
  */
 GFq_BivariatePolynomial dHasse(unsigned int mu, unsigned int nu, const GFq_BivariatePolynomial& a);
-
 
 } // namespace gf
 } // namespace rssoft

@@ -7,7 +7,10 @@ librssoft_la_SOURCES = GFq.cpp \
     GF2_Polynomial.cpp \
     GFq_BivariateMonomial.cpp \
     GFq_BivariatePolynomial.cpp \
-    GF_Utils.cpp
+    GF_Utils.cpp \
+	ReliabilityMatrix.cpp \
+	MultiplicityMatrix.cpp \
+	GSKV_Interpolation.cpp
 
 #librssoft_la_LIBADD = -lrt 
 

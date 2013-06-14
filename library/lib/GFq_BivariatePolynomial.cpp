@@ -67,6 +67,36 @@ void GFq_BivariatePolynomial::init(const std::map<GFq_BivariateMonomialExponents
 }
 
 // ================================================================================================
+void GFq_BivariatePolynomial::init_x_pow(const GFq& gf, unsigned int x_pow)
+{
+    monomials.insert(std::make_pair(std::make_pair(x_pow,0), GFq_Element(gf, 1)));
+}
+
+// ================================================================================================
+void GFq_BivariatePolynomial::init_y_pow(const GFq& gf, unsigned int y_pow)
+{
+    monomials.insert(std::make_pair(std::make_pair(0, y_pow), GFq_Element(gf, 1)));
+}
+
+// ================================================================================================
+void GFq_BivariatePolynomial::init_x_pow_series(const GFq& gf, unsigned int max_pow)
+{
+    for (unsigned int i = 0; i <= max_pow; i++)
+    {
+        monomials.insert(std::make_pair(std::make_pair(i,0), GFq_Element(gf, 1)));
+    }
+}
+
+// ================================================================================================
+void GFq_BivariatePolynomial::init_y_pow_series(const GFq& gf, unsigned int max_pow)
+{
+    for (unsigned int i = 0; i <= max_pow; i++)
+    {
+        monomials.insert(std::make_pair(std::make_pair(0,i), GFq_Element(gf, 1)));
+    }
+}
+
+// ================================================================================================
 bool GFq_BivariatePolynomial::is_valid() const
 {
 	return monomials.size() != 0;
