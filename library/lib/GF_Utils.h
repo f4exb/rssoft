@@ -35,6 +35,21 @@ namespace gf
  */
 bool binomial_coeff_parity(unsigned int n, unsigned int k);
 
+/**
+ * Computes factorial
+ * \param n input value
+ * \return n!
+ */
+unsigned int factorial(unsigned int x, unsigned int result = 1);
+
+/**
+ * Computes binomial coefficient
+ * \param n n as in (n k)
+ * \param k k as in (n k)
+ * \return (n k) or 0 if invalid (n<k)
+ */
+unsigned int binomial_coeff(unsigned int n, unsigned int k);
+
 }
 }
 

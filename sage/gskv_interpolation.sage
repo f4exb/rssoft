@@ -124,10 +124,10 @@ def process_hasse(xx,yy,u,v):
             wd=wdegree(g,1,k-1)
             
             if h_xy == 0:
-                ind="-"
+                ind="="
             else:
                 zero_hasse = False
-                ind="+"
+                ind="!"
                 if first_hnn:
                     lodmin=lodG[ig]
                     wdmin=wd

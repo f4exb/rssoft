@@ -28,10 +28,7 @@ namespace rssoft
 namespace gf
 {
 
-/**
- * Computes parity of a binomial coefficient
- * \return true if binomial coefficient is even
- */
+// ================================================================================================
 bool binomial_coeff_parity(unsigned int n, unsigned int k)
 {
 	while (k>0)
@@ -46,6 +43,36 @@ bool binomial_coeff_parity(unsigned int n, unsigned int k)
 	}
 
 	return false; // k = 0
+}
+
+// ================================================================================================
+unsigned int factorial(unsigned int x, unsigned int result) 
+{
+    if (x == 0)
+    {
+        return 1;
+    }
+    else if (x == 1)
+    {
+        return result; 
+    }
+    else 
+    {
+        return factorial(x - 1, x * result);
+    }
+}
+
+// ================================================================================================
+unsigned int binomial_coeff(unsigned int n, unsigned int k)
+{
+    if (n<k)
+    {
+        return 0;
+    }
+    else
+    {
+        return factorial(n) / (factorial(k) * factorial(n-k));
+    }
 }
 
 }

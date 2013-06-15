@@ -48,9 +48,14 @@ public:
 	GFq_BivariatePolynomial(unsigned int w_x, unsigned int w_y);
 
 	/**
-	 * Incomplete copy constructor. Does not copy the monomials
+	 * Constructs a new empty (thus invalid) bivariate polynomial
+	 * \param weights Weight in X,Y pair for monomials weighted ordering
+	 */
+	GFq_BivariatePolynomial(const std::pair<unsigned int, unsigned int>& _weights);
+
+	/**
+	 * Copy constructor.
 	 * \param polynomial Polynomial to copy from
-	 * \param w_y Weight in Y for monomials weighted ordering
 	 */
 	GFq_BivariatePolynomial(const GFq_BivariatePolynomial& polynomial);
 
@@ -158,6 +163,27 @@ public:
 	{
 		return static_cast<GFq_BivariateMonomial>(*(monomials.rbegin()));
 	}
+    
+    /**
+     * Get X power of leading monomial
+     */
+    unsigned int lmX() const
+    {
+        return static_cast<GFq_BivariateMonomial>(*(monomials.rbegin())).eX();
+    }
+    
+    /**
+     * Get Y power of leading monomial
+     */
+    unsigned int lmY() const
+    {
+        return static_cast<GFq_BivariateMonomial>(*(monomials.rbegin())).eY();
+    }
+    
+    /**
+     * Weighted degree of polynomial. That is the highest weighted degree of its monomials. 
+     */
+    unsigned int wdeg() const;
 
 	/**
 	 * Helper method to create the vector of monomials of the sum of polynomials a and b
@@ -198,19 +224,19 @@ public:
 	 * \param y_value y coordinate
 	 * \return Value of polynomial at (x,y) point
 	 */
-	const GFq_Element operator()(const GFq_Element& x_value, const GFq_Element& y_value) const;
+	GFq_Element operator()(const GFq_Element& x_value, const GFq_Element& y_value) const;
 
 	/**
 	 * Evaluation of polynomial for Y=0 as a univariate polynomial in X
 	 * \return Univariate polynomial in X as P(X,0)
 	 */
-	const GFq_Polynomial get_X_0() const;
+	GFq_Polynomial get_X_0() const;
 	
 	/**
 	 * Evaluation of polynomial for X=0 as a univariate polynomial in Y
 	 * \return Univariate polynomial in Y as P(0,Y)
 	 */
-	const GFq_Polynomial get_0_Y() const;
+	GFq_Polynomial get_0_Y() const;
 
 	/**
 	 * Applies to self the star function as P*(X,Y) = P(X,Y)/X^h where h is the greatest power of X so that X^h divides P
@@ -231,10 +257,10 @@ public:
 	 */
 	friend std::ostream& operator <<(std::ostream& os, const GFq_BivariatePolynomial& polynomial);
 
-
-
 protected:
-	const GFq_Polynomial get_v_0(bool x_terms) const;
+
+	GFq_Polynomial get_v_0(bool x_terms) const;
+    
 	std::pair<unsigned int, unsigned int> weights; //<! weights for weighted degree ordering
 	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> monomials; //<! set of monomials
 };

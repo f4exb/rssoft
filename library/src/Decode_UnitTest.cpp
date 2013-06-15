@@ -98,5 +98,7 @@ int main(int argc, char *argv[])
     }
 
     rssoft::GSKV_Interpolation gskv(gf8, 5);
+    
+    std::cout << std::endl;
     gskv.run(mat_M);
 }

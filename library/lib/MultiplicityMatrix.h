@@ -76,21 +76,21 @@ public:
     		std::map<std::pair<unsigned int, unsigned int>, unsigned int, MultiplicityMatrix_SparseOrdering>::const_iterator(c) {}
 
     	/**
-    	 * Return the index in X
+    	 * Return the index in X which is the column coordinate
     	 */
     	unsigned int iX()
     	{
     		std::map<std::pair<unsigned int, unsigned int>, unsigned int, MultiplicityMatrix_SparseOrdering>::const_iterator *c_it = this;
-    		return (*c_it)->first.first;
+    		return (*c_it)->first.second;
     	}
 
     	/**
-    	 * Return the index in Y
+    	 * Return the index in Y which is the row coordinate
     	 */
     	unsigned int iY()
     	{
     		std::map<std::pair<unsigned int, unsigned int>, unsigned int, MultiplicityMatrix_SparseOrdering>::const_iterator *c_it = this;
-    		return (*c_it)->first.second;
+    		return (*c_it)->first.first;
     	}
 
     	/**

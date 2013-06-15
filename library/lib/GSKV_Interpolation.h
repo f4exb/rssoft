@@ -87,6 +87,11 @@ protected:
 	 */
 	void process_hasse(const gf::GFq_Element& x, const gf::GFq_Element& y, unsigned int mu, unsigned int nu);
 
+	/**
+	 * Finalize process with G list of polynomials and find result polynomial
+	 */
+	void final_G();
+
 	// fixed parameters
 	const gf::GFq& gf; //!< Reference to the Galois Field being used
 	unsigned int k; //!< k factor as in RS(n,k)
@@ -97,6 +102,9 @@ protected:
 	std::vector<gf::GFq_BivariatePolynomial> G; //!< The G list of polynomials
 	std::vector<bool> calcG; //!< Li Chen's optimization. If true the corresponding polynomial in G is processed.
 	std::vector<unsigned int> lodG; //!< Leading orders of polynomials in G
+    unsigned int it_number; //!< Hasse derivative iteration number (inner loop)
+    unsigned int Cm; //!< Cost of current multiplicity matrix
+    unsigned int final_ig; //!< Index of the result polynomial in G list
 };
 
 } // namespace rssoft

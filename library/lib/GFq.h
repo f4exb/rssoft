@@ -155,6 +155,29 @@ public:
 
 	inline GFq_Symbol exp(const GFq_Symbol& a, const int& n) const
 	{
+		if (n == 0)
+		{
+			return 1;
+		}
+		else if (a == 0)
+        {
+            return 0;
+        }
+        else
+        {
+        	unsigned int log_a = index_of[a];
+        	unsigned int log_a_pwr_n = log_a * n;
+        	return alpha_to[log_a_pwr_n % field_size];
+        }
+	}
+
+/* Just does not work
+	inline GFq_Symbol exp(const GFq_Symbol& a, const int& n) const
+	{
+        if (n == 0)
+        {
+            return 1;
+        }
 #if !defined(NO_GFLUT)
 		if (n < 0)
 		{
@@ -205,6 +228,7 @@ public:
 		}
 #endif
 	}
+*/
 
 	inline GFq_Symbol inverse(const GFq_Symbol& val) const
 	{

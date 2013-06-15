@@ -24,8 +24,13 @@
 #include "GSKV_Interpolation.h"
 #include "RSSoft_Exception.h"
 #include "GFq.h"
+#include "GFq_Element.h"
+#include "GFq_BivariatePolynomial.h"
 #include "MultiplicityMatrix.h"
 #include <cmath>
+#include <iostream>
+#include <string>
+#include <algorithm>
 
 namespace rssoft
 {
@@ -33,7 +38,10 @@ namespace rssoft
 // ================================================================================================
 GSKV_Interpolation::GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k) :
 		gf(_gf),
-		k(_k)
+		k(_k),
+		it_number(0),
+		Cm(0),
+		final_ig(0)
 {
 	if (k < 2)
 	{
@@ -65,15 +73,21 @@ void GSKV_Interpolation::run(const MultiplicityMatrix& mmat)
 	std::cout << "dX = " << dX << ", dY = " << dY << std::endl;
 
 	init_G(dY);
+    it_number = 0;
+    Cm = mmat.cost();
 
 	// outer loop on multiplicity matrix elements
 
+    std::cout << "Loop on multiplicity matrix elements:" << std::endl;
 	MultiplicityMatrix::traversing_iterator m_it(mmat.begin());
 
 	for (; m_it != mmat.end(); ++m_it)
 	{
+        std::cout << "*** New point iX = " << m_it.iX() << " iY = " << m_it.iY() << " mult = " << m_it.multiplicity() <<  std::endl;
 		process_point(m_it.iX(), m_it.iY(), m_it.multiplicity());
 	}
+
+	final_G();
 }
 
 // ================================================================================================
@@ -96,8 +110,8 @@ void GSKV_Interpolation::init_G(unsigned int dY)
 	for (unsigned int i=0; i<dY+1; i++)
 	{
 		gf::GFq_BivariatePolynomial Y_i(1, k-1);
-		Y_i.init_y_pow(gf, i);
 		G.push_back(Y_i);
+		G.back().init_y_pow(gf, i);
 		calcG.push_back(true);
 		lodG.push_back(lod);
 		inclod += k-1;
@@ -120,7 +134,160 @@ void GSKV_Interpolation::process_point(unsigned int iX, unsigned int iY, unsigne
 // ================================================================================================
 void GSKV_Interpolation::process_hasse(const gf::GFq_Element& x, const gf::GFq_Element& y, unsigned int mu, unsigned int nu)
 {
+    unsigned int ig_lodmin = 0; //!< index of polynomial in G with minimal leading order
+    unsigned int lodmin = 0;    //!< minimal leading order of polynomials in G
+    bool first_hnn = true;
+    std::vector<gf::GFq_Element> hasse_xy_G;             //!< evaluations of Hasse derivative at (x,y) for all polynomials in G
+    std::vector<gf::GFq_BivariatePolynomial> G_next; //!< G list for next iteration
+    std::vector<unsigned int> lodG_next;             //!< Leading orders of polynomials in G_next
+    bool zero_Hasse = true;
+    std::string ind("");        //!< indicator character for debug display
+    
+    std::cout << "it=" << it_number << " x=" << x << " y=" << y << " mu=" << mu << " nu=" << nu << " G.size()=" << G.size() << std::endl;
+    
+    // Hasse derivatives calculation
+    
+    unsigned int ig = 0;
+    std::vector<gf::GFq_BivariatePolynomial>::const_iterator it_g = G.begin();
+    
+    for (; it_g != G.end(); ++it_g, ig++)
+    {
+        if (calcG[ig]) // Polynomial is part of calculation as per Li Chen's optimization
+        {
+            gf::GFq_BivariatePolynomial h = dHasse(mu, nu, *it_g);
+            hasse_xy_G.push_back(h(x,y));
+            unsigned int wd = it_g->wdeg();
+            
+            if (hasse_xy_G.back().is_zero())
+            {
+                ind = "=";
+            }
+            else
+            {
+                zero_Hasse = false;
+                ind = "!";
+                
+                // initialize polynomial localization variables
+                if (first_hnn)
+                {
+                    lodmin = lodG[ig];
+                    ig_lodmin = ig;
+                    first_hnn = false;
+                }
+                
+                // locate polynomial in G with minimal leading order
+                if (lodG[ig] < lodmin) 
+                {
+                    lodmin = lodG[ig];
+                    ig_lodmin = ig;
+                }
+            }
+        }
+        else // Polynomial is skipped for calculation due to Li Chen's optimization
+        {
+            ind = "x";
+            hasse_xy_G.push_back(gf::GFq_Element(gf,0));
+        }
+        
+        // debug print stuff
+        std::cout << ind << " G_" << it_number << "[" << ig << "] = " << *it_g << std::endl;
+        
+        if (calcG[ig])
+        {
+            std::cout << "  D_" << it_number << "," << ig << " = " << hasse_xy_G.back() << std::endl;
+            std::cout << "  lod = " << lodG[ig] << std::endl;
+        }
+        else
+        {
+            std::cout << "  lod = " << lodG[ig] << std::endl;
+        }
+    }
 
+    if (zero_Hasse)
+    {
+        std::cout << "All Hasse derivatives are 0 so G_" << it_number+1 << " = G_" << it_number << std::endl;
+    }
+    else
+    {
+        std::cout << "Minimal LOD polynomial G_" << it_number << "[" << ig_lodmin << "]" << std::endl;
+    }
+    
+    // compute next values in G
+    
+    it_g = G.begin();
+    ig = 0;
+    
+    for (; it_g != G.end(); ++it_g, ig++)
+    {
+        if (calcG[ig]) // Polynomial is part of calculation as per Li Chen's optimization
+        {
+            if (hasse_xy_G[ig].is_zero())
+            {
+                G_next.push_back(*it_g); // carry over the same polynomial 
+                lodG_next.push_back(lodG[ig]);
+            }
+            else
+            {
+                if (ig == ig_lodmin) // Polynomial with minimal leading order
+                {
+                    gf::GFq_BivariatePolynomial X1(1,k-1);
+                    X1.init_x_pow(gf,1); // X1(X,Y) = X
+                    G_next.push_back(hasse_xy_G[ig]*(*it_g)*(X1+x));
+                    unsigned int mX = it_g->lmX(); // leading monomial's X power
+                    unsigned int mY = it_g->lmY(); // leading monomial's Y power
+                    lodG_next.push_back(lodG[ig_lodmin]+(mX/(k-1))+1+mY); // new leading order by sliding one position of X powers to the right
+                }
+                else // other polynomials
+                {
+                    G_next.push_back(hasse_xy_G[ig]*G[ig_lodmin]-hasse_xy_G[ig_lodmin]*(*it_g));
+                    lodG_next.push_back(std::max(lodG[ig],lodG[ig_lodmin]));   // new leading order is the max of the two
+                }
+            }
+            
+            if (lodG_next.back() > Cm)
+            {
+                calcG[ig] = false; // Li Chen's complexity reduction, skip polynomial processing if its lod is too big (bigger than multiplicity cost)
+            }
+        }
+        else // Polynomial is skipped for calculation due to Li Chen's optimization
+        {
+            G_next.push_back(*it_g); // carry over the same polynomial 
+            lodG_next.push_back(lodG[ig]);
+        }
+    }
+    
+    // store next values
+    G.assign(G_next.begin(), G_next.end());
+    lodG.assign(lodG_next.begin(), lodG_next.end());
+    it_number++;
+    std::cout << std::endl;
+}
+
+// ================================================================================================
+void GSKV_Interpolation::final_G()
+{
+    unsigned int ig_lodmin = 0;    //!< index of polynomial in G with minimal leading order
+    unsigned int lodmin = lodG[0]; //!< minimal leading order of polynomials in G
+
+    unsigned int ig = 0;
+    std::vector<gf::GFq_BivariatePolynomial>::const_iterator it_g = G.begin();
+
+    std::cout << "it=" << it_number << " final result" << std::endl;
+
+    for (; it_g != G.end(); ++it_g, ig++)
+    {
+    	if (lodG[ig] < lodmin)
+    	{
+    		lodmin = lodG[ig];
+    		final_ig = ig;
+    	}
+
+    	std::cout << "o G_" << it_number << "[" << ig << "] = " << *it_g << std::endl;
+    	std::cout << "  lod = " << lodG[ig] << std::endl;
+    }
+
+    std::cout << "Minimal LOD polynomial G_" << it_number << "[" << final_ig << "]" << std::endl;
+    std::cout << "Q = " << G[final_ig] << std::endl;
 }
 
 } // namespace rssoft

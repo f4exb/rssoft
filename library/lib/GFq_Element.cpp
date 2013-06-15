@@ -65,7 +65,19 @@ namespace gf
 
 	std::ostream& operator << (std::ostream& os, const GFq_Element& gfe)
 	{
-		os << gfe.poly_value;
+		//os << gfe.poly_value;
+		if (gfe.poly_value == 0)
+		{
+			os << "0";
+		}
+		else if (gfe.poly_value == 1)
+		{
+			os << "1";
+		}
+		else
+		{
+			os << "a^" << gfe.field().index(gfe.poly_value);
+		}
 		return os;
 	}
 

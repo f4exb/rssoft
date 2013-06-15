@@ -230,6 +230,17 @@ int main(int argc, char *argv[])
     }
     */
 
+    /*
+    for (unsigned int n=0; n<40; n++)
+    {
+    	for (unsigned int i=0; i<gf8.size(); i++)
+    	{
+    		std::cout << "(a^" << i << ")^" << n << " = " << (rssoft::gf::GFq_Element(gf8,gf8.alpha(i)) ^ n) << std::endl;
+    	}
+    	std::cout << std::endl;
+    }
+    */
+
     exit(EXIT_SUCCESS);
     return true;
 }
