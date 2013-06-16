@@ -196,9 +196,9 @@ public:
      * Find non null roots of polynomial by Chien search. Basically this is an exhaustive search
      * optimized for hardware implementation but is also interesting in software.
      * see: http://www.stanford.edu/class/ee387/handouts/notes7.pdf
-     * \return vector of root field elements
+     * \param roots Vector of root field elements filled by the method
      */
-    std::vector<GFq_Element> rootChien();
+     void rootChien(std::vector<GFq_Element>& roots);
 
 	/**
 	 * Sets the output of coefficients in a power of alpha (printed a^i) ot binary representation

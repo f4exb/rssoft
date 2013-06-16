@@ -87,7 +87,8 @@ void GSKV_Interpolation::run(const MultiplicityMatrix& mmat)
 		process_point(m_it.iX(), m_it.iY(), m_it.multiplicity());
 	}
 
-	final_G();
+	const gf::GFq_BivariatePolynomial& Q = final_G();
+	std::cout << "Q(X,Y) = " << Q << std::endl;
 }
 
 // ================================================================================================
@@ -264,7 +265,7 @@ void GSKV_Interpolation::process_hasse(const gf::GFq_Element& x, const gf::GFq_E
 }
 
 // ================================================================================================
-void GSKV_Interpolation::final_G()
+const gf::GFq_BivariatePolynomial& GSKV_Interpolation::final_G()
 {
     unsigned int ig_lodmin = 0;    //!< index of polynomial in G with minimal leading order
     unsigned int lodmin = lodG[0]; //!< minimal leading order of polynomials in G
@@ -287,7 +288,7 @@ void GSKV_Interpolation::final_G()
     }
 
     std::cout << "Minimal LOD polynomial G_" << it_number << "[" << final_ig << "]" << std::endl;
-    std::cout << "Q = " << G[final_ig] << std::endl;
+    return G[final_ig];
 }
 
 } // namespace rssoft

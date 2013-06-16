@@ -204,6 +204,18 @@ public:
 			const GFq_BivariatePolynomial& a,
 			const GFq_BivariateMonomial& b);
 
+	/**
+	 * Helper method to create the map of monomials of the polynomial to the nth power
+	 */
+	static void pow(std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& pow_monomials,
+			const GFq_BivariatePolynomial& a,
+			unsigned int n);
+
+	/**
+	 * Helper method to simplify a map of monomials i.e. remove those with coefficient 0
+	 */
+	static void simplify(std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& monomials);
+
 	GFq_BivariatePolynomial& operator =(const GFq_BivariatePolynomial& polynomial);
 	GFq_BivariatePolynomial& operator+=(const GFq_BivariatePolynomial& polynomial);
 	GFq_BivariatePolynomial& operator+=(const GFq_Element& gfe);
@@ -214,6 +226,7 @@ public:
 	GFq_BivariatePolynomial& operator*=(const GFq_Element& gfe);
 	GFq_BivariatePolynomial& operator/=(const GFq_BivariateMonomial& monomial);
 	GFq_BivariatePolynomial& operator/=(const GFq_Element& gfe);
+	GFq_BivariatePolynomial& operator^=(unsigned int n);
 
 	bool operator==(const GFq_BivariatePolynomial& polynomial) const;
 	bool operator!=(const GFq_BivariatePolynomial& polynomial) const;
@@ -225,6 +238,14 @@ public:
 	 * \return Value of polynomial at (x,y) point
 	 */
 	GFq_Element operator()(const GFq_Element& x_value, const GFq_Element& y_value) const;
+
+	/**
+	 * Evaluation of bivariate polynomial at (P(X,Y),Q(X,Y))
+	 * \param P Polynomial in place of X
+	 * \param Q Polynomial in place of Y
+	 * \return (*this)(P(X,Y),Q(X,Y))
+	 */
+	GFq_BivariatePolynomial operator()(const GFq_BivariatePolynomial& P, const GFq_BivariatePolynomial& Q) const;
 
 	/**
 	 * Evaluation of polynomial for Y=0 as a univariate polynomial in X
@@ -260,7 +281,36 @@ public:
 protected:
 
 	GFq_Polynomial get_v_0(bool x_terms) const;
-    
+
+	/**
+	 * Helper method to create the map of monomials of the product of maps a and b
+	 */
+	static void product(std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& prod_monomials,
+			const std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& a_monomials,
+			const std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& b_monomials);
+
+	/**
+	 * Helper method to create the map of monomials of the product of constant, maps a and b
+	 */
+	static void product(std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& prod_monomials,
+			const GFq_Element& v,
+			const std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& a_monomials,
+			const std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& b_monomials);
+
+	/**
+	 * Helper method to add a monomial to a map of monomials
+	 */
+	static void add_monomial(std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& monomials,
+			const GFq_BivariateMonomialKeyValueRepresentation& a);
+
+	/**
+	 * Helper method to add a monomial to a map of monomials
+	 */
+	static void add_monomial(std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>& monomials,
+			const GFq_Element& coeff,
+			unsigned int x_pow,
+			unsigned int y_pow);
+
 	std::pair<unsigned int, unsigned int> weights; //<! weights for weighted degree ordering
 	std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> monomials; //<! set of monomials
 };
@@ -282,6 +332,7 @@ GFq_BivariatePolynomial operator *(const GFq_BivariatePolynomial& a, const GFq_E
 GFq_BivariatePolynomial operator *(const GFq_Element& a, const GFq_BivariatePolynomial& b);
 GFq_BivariatePolynomial operator /(const GFq_BivariatePolynomial& a, const GFq_BivariateMonomial& b);
 GFq_BivariatePolynomial operator /(const GFq_BivariatePolynomial& a, const GFq_Element& b);
+GFq_BivariatePolynomial operator ^(const GFq_BivariatePolynomial& a, unsigned int n);
 
 /**
  * Star function as P*(X,Y) = P(X,Y)/X^h where h is the greatest power of X so that X^h divides P

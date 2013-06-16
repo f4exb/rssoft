@@ -142,16 +142,16 @@ public:
 };
 
 GFq_BivariateMonomial operator +(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
-GFq_BivariateMonomial operator +(const GFq_BivariateMonomial& a, const GF2_Element& b);
-GFq_BivariateMonomial operator +(const GF2_Element& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator +(const GFq_BivariateMonomial& a, const GFq_Element& b);
+GFq_BivariateMonomial operator +(const GFq_Element& a, const GFq_BivariateMonomial& b);
 GFq_BivariateMonomial operator -(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
-GFq_BivariateMonomial operator -(const GFq_BivariateMonomial& a, const GF2_Element& b);
-GFq_BivariateMonomial operator -(const GF2_Element& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator -(const GFq_BivariateMonomial& a, const GFq_Element& b);
+GFq_BivariateMonomial operator -(const GFq_Element& a, const GFq_BivariateMonomial& b);
 GFq_BivariateMonomial operator *(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
-GFq_BivariateMonomial operator *(const GF2_Element& a, const GFq_BivariateMonomial& b);
-GFq_BivariateMonomial operator *(const GFq_BivariateMonomial& a, const GF2_Element& b);
+GFq_BivariateMonomial operator *(const GFq_Element& a, const GFq_BivariateMonomial& b);
+GFq_BivariateMonomial operator *(const GFq_BivariateMonomial& a, const GFq_Element& b);
 GFq_BivariateMonomial operator /(const GFq_BivariateMonomial& a, const GFq_BivariateMonomial& b);
-GFq_BivariateMonomial operator /(const GFq_BivariateMonomial& a, const GF2_Element& b);
+GFq_BivariateMonomial operator /(const GFq_BivariateMonomial& a, const GFq_Element& b);
 
 /**
  * Prints monomials to output stream

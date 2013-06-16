@@ -10,7 +10,8 @@ librssoft_la_SOURCES = GFq.cpp \
     GF_Utils.cpp \
 	ReliabilityMatrix.cpp \
 	MultiplicityMatrix.cpp \
-	GSKV_Interpolation.cpp
+	GSKV_Interpolation.cpp \
+	RR_Factorization
 
 #librssoft_la_LIBADD = -lrt 
 

@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
 	rssoft::gf::GFq_BivariateMonomial m_aXY(rssoft::gf::GFq_Element(gf8,2),1,1); // a*X*Y
 	rssoft::gf::GFq_BivariateMonomial m_X2(rssoft::gf::GFq_Element(gf8,1),2,0);  // X^2
 	rssoft::gf::GFq_BivariateMonomial m_1(rssoft::gf::GFq_Element(gf8,1),0,0);   // 1
+	rssoft::gf::GFq_BivariateMonomial m_a(rssoft::gf::GFq_Element(gf8,2),0,0);   // a
 	rssoft::gf::GFq_BivariateMonomial m_aX3(rssoft::gf::GFq_Element(gf8,2),3,0); // a*X^3
 	rssoft::gf::GFq_BivariateMonomial m_Y2(rssoft::gf::GFq_Element(gf8,1),0,2);  // Y^2
 	rssoft::gf::GFq_BivariateMonomial m_X(rssoft::gf::GFq_Element(gf8,1),1,0);   // X
@@ -114,6 +115,17 @@ int main(int argc, char *argv[])
 	std::cout << "P*U = " << P*U << std::endl;
 	std::cout << "Q/m_Y = " << Q/m_Y << std::endl;
 	std::cout << "Q/a = " << Q/a << std::endl;
+
+	std::vector<rssoft::gf::GFq_BivariateMonomial> monos_U1;
+	monos_U1.push_back(m_a);
+	monos_U1.push_back(m_XY);
+
+	rssoft::gf::GFq_BivariatePolynomial U1(1,k-1);
+	U1.init(monos_U1);
+
+	std::cout << std::endl;
+	std::cout << "U1(X,Y) = " << U1 << std::endl;
+	std::cout << "U1^4(X,Y) = " << (U1^4) << std::endl;
 
 	std::cout << std::endl;
 	std::cout << "P(a,a^2) = " << P(a,a^2) << std::endl;
@@ -185,6 +197,14 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 	std::cout << "V(X,Y) = " << V << std::endl;
 	std::cout << "V(a^5,0) = " << V(a5, rssoft::gf::GFq_Element(gf8,0)) << std::endl;
+
+	rssoft::gf::GFq_BivariatePolynomial X1(1,k-1);
+	X1.init_x_pow(gf8, 1);
+
+	std::cout << std::endl;
+	std::cout << "X1(X,Y) = " << X1 << std::endl;
+	std::cout << "P(X,Q(X,Y))  = " << P(X1,Q) << std::endl;
+	std::cout << "Q(X,U1(X,Y)) = " << Q(X1,U1) << std::endl;
 }
 
 

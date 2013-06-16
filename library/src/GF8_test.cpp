@@ -174,10 +174,12 @@ int main(int argc, char *argv[])
     const std::vector<rssoft::gf::GFq_Element>& rootsQ = rootex(Q);
     std::cout << "roots(Q) = " << rootsQ << std::endl;
 
-    const std::vector<rssoft::gf::GFq_Element>& rootsChienP = P.rootChien();
+    std::vector<rssoft::gf::GFq_Element> rootsChienP;
+    P.rootChien(rootsChienP);
     std::cout << "(Chien's) roots(P) = " << rootsChienP << std::endl;
 
-    const std::vector<rssoft::gf::GFq_Element>& rootsChienQ = Q.rootChien();
+    std::vector<rssoft::gf::GFq_Element> rootsChienQ;
+    Q.rootChien(rootsChienQ);
     std::cout << "(Chien's) roots(Q) = " << rootsChienQ << std::endl;
 
     rssoft::gf::GFq_Element ce[2] = {
@@ -203,7 +205,8 @@ int main(int argc, char *argv[])
     const std::vector<rssoft::gf::GFq_Element>& rootsMCi = rootex(C*C1*C2*C3);
     std::cout << "roots(C*C1*C2*C3) = " << rootsMCi << std::endl;
 
-    const std::vector<rssoft::gf::GFq_Element>& rootsChienMCi = rootex(C*C1*C2*C3);
+    std::vector<rssoft::gf::GFq_Element> rootsChienMCi;
+    (C*C1*C2*C3).rootChien(rootsChienMCi);
     std::cout << "(Chien's) roots(C*C1*C2*C3) = " << rootsChienMCi << std::endl;
 
     rssoft::gf::GFq_Polynomial D=P;

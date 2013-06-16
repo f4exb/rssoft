@@ -45,6 +45,7 @@ public:
 	/**
 	 * Constructor
 	 * \param gf Reference to the Galois Field being used
+	 * \param k as in RS(n,k)
 	 */
 	GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k);
 
@@ -89,8 +90,9 @@ protected:
 
 	/**
 	 * Finalize process with G list of polynomials and find result polynomial
+	 * \return Reference to the result polynomial
 	 */
-	void final_G();
+	const gf::GFq_BivariatePolynomial& final_G();
 
 	// fixed parameters
 	const gf::GFq& gf; //!< Reference to the Galois Field being used

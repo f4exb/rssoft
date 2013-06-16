@@ -271,26 +271,16 @@ bool GFq_WeightedRevLex_BivariateMonomial::operator()(const GFq_BivariateMonomia
 // ================================================================================================
 std::ostream& operator <<(std::ostream& os, const GFq_BivariateMonomialKeyValueRepresentation& monomial)
 {
-	if (monomial.second.is_zero())
+
+	if (monomial.first.are_zero())
 	{
-		if (monomial.first.are_zero())
-		{
-			os << "0";
-		}
-	}
-	else if (monomial.second == 1)
-	{
-		if (monomial.first.are_zero())
-		{
-			os << "1";
-		}
+		os << monomial.second;
 	}
 	else
 	{
-		os << monomial.second;
-
-		if (!monomial.first.are_zero())
+		if (monomial.second != 1)
 		{
+			os << monomial.second;
 			os << "*";
 		}
 	}
@@ -303,11 +293,11 @@ std::ostream& operator <<(std::ostream& os, const GFq_BivariateMonomialKeyValueR
 		{
 			os << "^" << monomial.first.x();
 		}
-	}
 
-	if ((monomial.first.x() > 0) && (monomial.first.y() > 0))
-	{
-		os << "*";
+		if (monomial.first.y() > 0)
+		{
+			os << "*";
+		}
 	}
 
 	if (monomial.first.y() > 0)

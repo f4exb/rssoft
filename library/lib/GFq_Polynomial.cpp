@@ -492,9 +492,8 @@ GFq_Element GFq_Polynomial::make_monic()
 }
 
 // ================================================================================================
-std::vector<GFq_Element> GFq_Polynomial::rootChien()
+void GFq_Polynomial::rootChien(std::vector<GFq_Element>& roots)
 {
-	std::vector<GFq_Element> roots;
 	std::vector<GFq_Element> wpoly(poly);
 	const GFq_Element zero(gf,0);
 
@@ -512,8 +511,6 @@ std::vector<GFq_Element> GFq_Polynomial::rootChien()
 			wpoly[j] *= gf.alpha(j);
 		}
 	}
-
-	return roots;
 }
 
 // ================================================================================================
@@ -864,13 +861,20 @@ std::ostream& operator <<(std::ostream& os, const GFq_Polynomial& polynomial)
 				}
 				else
 				{
-					if ((coeff == 1) && (i != 0))
+					if (coeff == 1)
 					{
-						os << "";
+						if (i != 0)
+						{
+							os << "";
+						}
+						else
+						{
+							os << coeff << " ";
+						}
 					}
 					else
 					{
-						os << coeff << " ";
+						os << coeff << "*";
 					}
 				}
 
