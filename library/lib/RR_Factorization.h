@@ -48,16 +48,26 @@ public:
 	 * Constructor
 	 * \param _parent Pointer to the parent node, 0 for root node
 	 * \param _Q Node polynomial
+     * \param _coeff Coefficient on the arc towards this node
 	 * \param _id Node identifier
 	 */
 	RR_Node(RR_Node *_parent,
 			const gf::GFq_BivariatePolynomial& _Q,
+            const gf::GFq_Element& _coeff,
 			unsigned int _id);
+
+	/**
+	 * Get the node's Id
+	 */
+	unsigned int get_id() const
+	{
+		return id;
+	}
 
 	/**
 	 * Get the degree of the node
 	 */
-	unsigned int get_degree() const
+	int get_degree() const
 	{
 		return degree;
 	}
@@ -65,9 +75,17 @@ public:
 	/**
 	 * Get node's polynomial
 	 */
-	const gf::GFq_Polynomial& getQ() const
+	const gf::GFq_BivariatePolynomial& getQ() const
 	{
 		return Q;
+	}
+
+	/**
+	 * Get coefficient towards the node
+	 */
+	const gf::GFq_Element& get_coeff() const
+	{
+		return coeff;
 	}
 
 	/**
@@ -90,6 +108,7 @@ public:
 protected:
 	RR_Node *parent; //!< Pointer to the parent node
 	const gf::GFq_BivariatePolynomial& Q; //!< Node's polynomial
+    const gf::GFq_Element& coeff; // !< Coefficient on the arc towards this node
 	unsigned int id; //!< Identifier number of the node
 	int degree; //!< The distance of the node from the root counted in the number of arcs less one
 	std::set<gf::GFq_Element> ry_set; //!< Set of roots in Y of the node's polynomial
@@ -122,8 +141,9 @@ public:
 	/**
 	 * Run factorization of given polynomial
 	 * \param polynomial Input polynomial
+     * \return list of polynomial factors
 	 */
-	void run(const gf::GFq_BivariatePolynomial& polynomial);
+	std::vector<gf::GFq_Polynomial>& run(const gf::GFq_BivariatePolynomial& polynomial);
 
 protected:
 	/**

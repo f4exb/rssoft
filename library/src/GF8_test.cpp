@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
     std::cout << "P(x)/Z(x) = " << P/Z << std::endl;
     
     rssoft::gf::GFq_Polynomial G=gcd(P,Q);
+    std::cout << std::endl;
     std::cout << "gcd(P,Q)(x) = " << G << std::endl;
 
     rssoft::gf::GFq_Element ae[3] = {
@@ -161,6 +162,7 @@ int main(int argc, char *argv[])
     
     std::cout << "P'(x) = " << P.derivative() << std::endl;
     
+    std::cout << std::endl;
     std::cout << "P(x)<<1 = " << (P<<1) << std::endl;
     std::cout << "P(x)>>1 = " << (P>>1) << std::endl;
     std::cout << "P(x)<<2 = " << (P<<2) << std::endl;
@@ -169,6 +171,7 @@ int main(int argc, char *argv[])
     std::cout << "P(x)>>3 = " << (P>>3) << std::endl;
     
     const std::vector<rssoft::gf::GFq_Element>& rootsP = rootex(P);
+    std::cout << std::endl;
     std::cout << "roots(P) = " << rootsP << std::endl;
 
     const std::vector<rssoft::gf::GFq_Element>& rootsQ = rootex(Q);
@@ -211,38 +214,28 @@ int main(int argc, char *argv[])
 
     rssoft::gf::GFq_Polynomial D=P;
     const rssoft::gf::GFq_Element d_lead = D.make_monic();
+    std::cout << std::endl;
     std::cout << "P.make_monic(X)) = " << D << " lead : " << d_lead << std::endl;
     rssoft::gf::GFq_Element d_lead2(D.field());
     D = get_monic(P, d_lead2);
     std::cout << "get_monic(P(X)) = " << D << " lead : " << d_lead2 << std::endl;
     
+    std::cout << std::endl;
     std::cout << "P (D) square free decomposition: " << square_free_decomposition(D) << std::endl;
     rssoft::gf::GFq_Polynomial Cx = C*C1*C2*C3;
     Cx.make_monic();
     std::cout << "C*C1*C2*C3(X) (monic) = " << Cx << std::endl;
     std::cout << "C*C1*C2*C3 square free decomposition: " << square_free_decomposition(Cx) << std::endl;
 
-    // use monic P
-    /*
-    const std::vector<rssoft::gf::GFq_Polynomial>& decomp_P = square_free_decomposition(D);
-    std::vector<rssoft::gf::GFq_Polynomial>::const_iterator pd_it = decomp_P.begin();
-
-    for (; pd_it != decomp_P.end(); ++pd_it)
-    {
-    	std::cout << "* " << *pd_it << std::endl;
-    }
-    */
-
-    /*
-    for (unsigned int n=0; n<40; n++)
-    {
-    	for (unsigned int i=0; i<gf8.size(); i++)
-    	{
-    		std::cout << "(a^" << i << ")^" << n << " = " << (rssoft::gf::GFq_Element(gf8,gf8.alpha(i)) ^ n) << std::endl;
-    	}
-    	std::cout << std::endl;
-    }
-    */
+    rssoft::gf::GFq_Element x1e[2] = {
+        rssoft::gf::GFq_Element(gf8,0),
+        rssoft::gf::GFq_Element(gf8,1),
+    };
+    size_t x1e_sz = sizeof(x1e)/sizeof(rssoft::gf::GFq_Element);
+    rssoft::gf::GFq_Polynomial X1(gf8,x1e_sz,x1e);
+    std::cout << std::endl;
+    std::cout << "X1(X) = " << X1 << std::endl;
+    std::cout << "X1(X)^4 = " << (X1^4) << std::endl;
 
     exit(EXIT_SUCCESS);
     return true;

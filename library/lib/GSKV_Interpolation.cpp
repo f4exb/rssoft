@@ -65,7 +65,7 @@ GSKV_Interpolation::~GSKV_Interpolation()
 {}
 
 // ================================================================================================
-void GSKV_Interpolation::run(const MultiplicityMatrix& mmat)
+const gf::GFq_BivariatePolynomial& GSKV_Interpolation::run(const MultiplicityMatrix& mmat)
 {
 	std::pair<unsigned int, unsigned int> max_degrees = maximum_degrees(mmat);
 	unsigned int dX = max_degrees.first;
@@ -89,6 +89,7 @@ void GSKV_Interpolation::run(const MultiplicityMatrix& mmat)
 
 	const gf::GFq_BivariatePolynomial& Q = final_G();
 	std::cout << "Q(X,Y) = " << Q << std::endl;
+    return Q;
 }
 
 // ================================================================================================

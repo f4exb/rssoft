@@ -315,14 +315,22 @@ GFq_Polynomial& GFq_Polynomial::operator%=(const unsigned int& power)
 // ================================================================================================
 GFq_Polynomial& GFq_Polynomial::operator^=(const int& n)
 {
-	GFq_Polynomial result = *this;
+    if (n == 0) // P^0 = 1
+    {
+        poly.clear();
+        poly.push_back(GFq_Element(gf, 1)); 
+    }
+    else if (n > 1)
+    {
+        GFq_Polynomial result = *this;
+        
+        for (unsigned int i=0; i<n-1; i++)
+        {
+            result *= *this;
+        }
 
-	for (int i = 0; i < n; i++)
-	{
-		result *= *this;
-	}
-
-	*this = result;
+        *this = result;
+    }
 
 	return *this;
 }
@@ -852,11 +860,11 @@ std::ostream& operator <<(std::ostream& os, const GFq_Polynomial& polynomial)
 					}
 					else if (log_alpha == 1)
 					{
-						os << "a ";
+						os << "a" << ((!first_coeff) ? "*" : " ");
 					}
 					else
 					{
-						os << "a^" << log_alpha << " ";
+						os << "a^" << log_alpha << ((!first_coeff) ? "*" : " ");
 					}
 				}
 				else
@@ -874,7 +882,7 @@ std::ostream& operator <<(std::ostream& os, const GFq_Polynomial& polynomial)
 					}
 					else
 					{
-						os << coeff << "*";
+						os << coeff << ((!first_coeff) ? "*" : " ");
 					}
 				}
 
@@ -882,11 +890,11 @@ std::ostream& operator <<(std::ostream& os, const GFq_Polynomial& polynomial)
 				{
 					if (i == 1)
 					{
-						os << "x ";
+						os << "X ";
 					}
 					else
 					{
-						os << "x^" << i << " ";
+						os << "X^" << i << " ";
 					}
 				}
 

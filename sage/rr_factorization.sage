@@ -58,7 +58,7 @@ def rr_run():
 def rr_dfs(u):
     global t
 
-    #print u.id, u.deg, u.Q(Y=0) == 0, u.coeff
+    print "*** Node", u.id, u.deg, u.Q(Y=0) == 0, u.coeff
     
     Ry=rootsy(u.Q)
     
@@ -66,27 +66,34 @@ def rr_dfs(u):
         if ry not in u.ry_set: 
             u.ry_set.add(ry)
             Qv=star((u.Q)(Y=X*Y+ry[0]))
+            print "    ry =", ry[0], "Qv =", Qv
             # Optimization: anticipate behaviour at child node
             if Qv(Y=0) == 0: 
                 if u.deg < k-1:
+                    print "    -> trace back this route from node v:", u.coeff*X^u.deg+ry[0]*X^(u.deg+1)
                     return u.coeff*X^u.deg+ry[0]*X^(u.deg+1) # trace back this route from node v
                 else:
+                    print "    -> trace back this route from node u:", u.coeff*X^u.deg
                     return u.coeff*X^u.deg # trace back this route from node u
             elif u.deg == k-1 and Qv(Y=0) != 0:
                 return None # cancel this route 
             # construct child node
             else: 
                 t += 1
+                print "    child", t
                 v = RR_Node(u,ry[0],Qv)
                 fpart_v = rr_dfs(v) # recursive call
                 # unroll child node
                 if u.deg == -1: # Root node collects results
+                    print "    we are at root node"
                     if fpart_v is not None:
                         F.append(fpart_v)
                 else:
                     if fpart_v == None:
+                        print "    -> propagate invalid route"
                         return None
                     else:
+                        print "    -> return partial polynomial:", u.coeff*X^u.deg + fpart_v
                         return u.coeff*X^u.deg + fpart_v
                                 
 

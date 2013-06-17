@@ -56,8 +56,9 @@ public:
 
 	/**
 	 * Run the interpolation based on given multiplicity matrix
+     * \return reference to the result polynomial
 	 */
-	void run(const MultiplicityMatrix& mmat);
+	const gf::GFq_BivariatePolynomial& run(const MultiplicityMatrix& mmat);
 
 protected:
 	/**

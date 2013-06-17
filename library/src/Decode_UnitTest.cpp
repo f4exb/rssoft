@@ -31,6 +31,7 @@
 #include "ReliabilityMatrix.h"
 #include "MultiplicityMatrix.h"
 #include "GSKV_Interpolation.h"
+#include "RR_Factorization.h"
 #include <iostream>
 #include <iomanip>
 
@@ -98,7 +99,18 @@ int main(int argc, char *argv[])
     }
 
     rssoft::GSKV_Interpolation gskv(gf8, 5);
+    rssoft::RR_Factorization rr(gf8, 5);
     
     std::cout << std::endl;
-    gskv.run(mat_M);
+    std::vector<rssoft::gf::GFq_Polynomial>& res_polys = rr.run(gskv.run(mat_M));
+    
+    std::cout << res_polys.size() << " result(s)" << std::endl;
+    
+    std::vector<rssoft::gf::GFq_Polynomial>::iterator respoly_it = res_polys.begin();
+    unsigned int i=0;
+    for (; respoly_it != res_polys.end(); ++respoly_it, i++)
+    {
+    	respoly_it->set_alpha_format(true);
+        std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
+    }
 }

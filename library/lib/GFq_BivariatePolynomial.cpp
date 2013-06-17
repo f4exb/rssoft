@@ -379,7 +379,11 @@ void GFq_BivariatePolynomial::pow(std::map<GFq_BivariateMonomialExponents, GFq_E
 		{
 			pow_monomials = a_monomials;
 		}
-		else
+		else if (a_monomials.size() == 1) // Optimization if polynomial is reduced to a single monomial: (a*X^i*Y^j)^n = a^n*X^(i*n)*Y^(j*n)
+        {
+            add_monomial(pow_monomials, (a_monomials.begin()->second)^n, (a_monomials.begin()->first.first)*n, (a_monomials.begin()->first.second)*n);
+        }
+        else
 		{
 			std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> at_monomials(a_monomials); //!< temporary a^i monomials
 			std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial> pt_monomials(pow_monomials); //!< temporary power monomials
@@ -722,7 +726,7 @@ GFq_BivariatePolynomial GFq_BivariatePolynomial::operator()(const GFq_BivariateP
 	}
 	else if (!Q.is_valid())
 	{
-		throw GF_Exception("First operand polynomial is invalid");
+		throw GF_Exception("Second operand polynomial is invalid");
 	}
 	else if (P.get_weights() != Q.get_weights())
 	{

@@ -156,22 +156,22 @@ public:
 		return (poly_value != v);
 	}
 
-	inline bool operator<(const GFq_Element& gfe)
+	inline bool operator<(const GFq_Element& gfe) const
 	{
 		return (poly_value < gfe.poly_value);
 	}
 
-	inline bool operator<(const GFq_Symbol& v)
+	inline bool operator<(const GFq_Symbol& v) const
 	{
 		return (poly_value < v);
 	}
 
-	inline bool operator>(const GFq_Element& gfe)
+	inline bool operator>(const GFq_Element& gfe) const
 	{
 		return (poly_value > gfe.poly_value);
 	}
 
-	inline bool operator>(const GFq_Symbol& v)
+	inline bool operator>(const GFq_Symbol& v) const
 	{
 		return (poly_value > v);
 	}
