@@ -32,15 +32,16 @@
 #include "MultiplicityMatrix.h"
 #include "GSKV_Interpolation.h"
 #include "RR_Factorization.h"
+#include "FinalEvaluation.h"
 #include <iostream>
 #include <iomanip>
 
 float pwr_S0[8] = {2.163577, 0.003943, 0.064378, 0.000117, 0.021512, 0.000038, 0.000640, 0.000002};
 float pwr_S1[8] = {0.459689, 0.012363, 0.011172, 0.000300, 1.580876, 0.042520, 0.038420, 0.001032};
-float pwr_S2[8] = {0.009034, 0.000000, 0.000245, 0.000000, 1.603912, 0.000010, 0.043565, 0.000000};
+float pwr_S2[8] = {0.009034, 0.000001, 0.000245, 0.000001, 1.603912, 0.000010, 0.043565, 0.000001};
 float pwr_S3[8] = {0.736172, 0.838307, 0.005258, 0.005987, 0.005077, 0.005782, 0.000037, 0.000042};
-float pwr_S4[8] = {0.001144, 0.912521, 0.000128, 0.102537, 0.000000, 0.000312, 0.000000, 0.000036};
-float pwr_S5[8] = {0.000708, 0.036403, 0.026054, 1.339624, 0.000000, 0.000004, 0.000003, 0.000129};
+float pwr_S4[8] = {0.001144, 0.912521, 0.000128, 0.102537, 0.000001, 0.000312, 0.000001, 0.000036};
+float pwr_S5[8] = {0.000708, 0.036403, 0.026054, 1.339624, 0.000001, 0.000004, 0.000003, 0.000129};
 float pwr_S6[8] = {1.507900, 0.000456, 0.045338, 0.000013, 0.607732, 0.000183, 0.018272, 0.000007};
 
 /*
@@ -113,4 +114,11 @@ int main(int argc, char *argv[])
     	respoly_it->set_alpha_format(true);
         std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
     }
+    
+    rssoft::FinalEvaluation final_evaluation(gf8, gskv.get_evaluation_points(), gskv.get_symbols());
+    final_evaluation.run(res_polys, mat_Pi);
+    std::cout << "Codewords:" << std::endl;
+    final_evaluation.print_codewords(std::cout, final_evaluation.get_codewords());
+    std::cout << "Messages:" << std::endl;
+    final_evaluation.print_codewords(std::cout, final_evaluation.get_messages());
 }

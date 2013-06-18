@@ -80,6 +80,11 @@ namespace gf
 		}
 		return os;
 	}
+    
+    GFq_Symbol gfq_element_to_symbol(const GFq_Element& gfe)
+    {
+        return gfe.poly();
+    }
 
 	GFq_Element operator+(const GFq_Element& a, const GFq_Element& b)
 	{

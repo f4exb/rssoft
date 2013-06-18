@@ -53,6 +53,22 @@ public:
 	 * Destructor
 	 */
 	~GSKV_Interpolation();
+    
+    /**
+     * Get the X evaluation points used to calculate candidate codewords (horizontal or column matrix wise)
+     */
+    const std::vector<gf::GFq_Element>& get_evaluation_points() const
+    {
+        return x_values;
+    }
+
+    /**
+     * Get the Y symbols that compose codewords (vertical or row matrix wise)
+     */
+    const std::vector<gf::GFq_Element>& get_symbols() const
+    {
+        return y_values;
+    }
 
 	/**
 	 * Run the interpolation based on given multiplicity matrix

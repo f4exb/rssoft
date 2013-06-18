@@ -205,10 +205,10 @@ public:
 	{
 		return poly_value == 1;
 	}
-
+    
 	friend std::ostream& operator <<(std::ostream& os,
 			const GFq_Element& gfe);
-
+            
 private:
 
 	const GFq& gf;
@@ -222,6 +222,8 @@ GFq_Element operator *(const GFq_Element& a, const GFq_Symbol& b);
 GFq_Element operator *(const GFq_Symbol& a, const GFq_Element& b);
 GFq_Element operator /(const GFq_Element& a, const GFq_Element& b);
 GFq_Element operator ^(const GFq_Element& a, const int& b);
+
+GFq_Symbol gfq_element_to_symbol(const GFq_Element& gfe);
 
 } // namespace gf
 } // namespace rssoft

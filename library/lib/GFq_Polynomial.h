@@ -50,6 +50,7 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <algorithm>
 #include <assert.h>
 #include "GFq.h"
 #include "GFq_Element.h"
@@ -147,6 +148,15 @@ public:
 	 * Gets a modifiable reference to the coefficients vector
 	 */
 	std::vector<GFq_Element>& get_poly_for_update();
+
+	/**
+	 * Gets the coefficients vector as symbols
+	 */
+    void get_poly_symbols(std::vector<GFq_Symbol>& symbols) const
+    {
+        symbols.resize(poly.size());
+        std::transform(poly.begin(), poly.end(), symbols.begin(), gfq_element_to_symbol);
+    }
 
 	/**
 	 * Sets the degree of the polynomial.
