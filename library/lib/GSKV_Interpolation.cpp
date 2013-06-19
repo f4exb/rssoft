@@ -26,7 +26,9 @@
 #include "GFq.h"
 #include "GFq_Element.h"
 #include "GFq_BivariatePolynomial.h"
+#include "EvaluationValues.h"
 #include "MultiplicityMatrix.h"
+#include "Debug.h"
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -36,27 +38,18 @@ namespace rssoft
 {
 
 // ================================================================================================
-GSKV_Interpolation::GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k) :
+GSKV_Interpolation::GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k, const EvaluationValues& _evaluation_values) :
 		gf(_gf),
 		k(_k),
+		evaluation_values(_evaluation_values),
 		it_number(0),
 		Cm(0),
-		final_ig(0)
+		final_ig(0),
+        verbosity(0)
 {
 	if (k < 2)
 	{
 		throw RSSoft_Exception("k parameter must be at least 2");
-	}
-
-	// default X interpolation values initialized as increasing powers of alpha starting at a^0 = 1
-	// default Y interpolation values initialized as 0 followed by increasing powers of alpha starting at a^0 = 1
-
-	y_values.push_back(gf::GFq_Element(gf, 0));
-
-	for (unsigned int i=0; i < gf.size(); i++)
-	{
-		x_values.push_back(gf::GFq_Element(gf, gf.alpha(i)));
-		y_values.push_back(gf::GFq_Element(gf, gf.alpha(i)));
 	}
 }
 
@@ -70,7 +63,10 @@ const gf::GFq_BivariatePolynomial& GSKV_Interpolation::run(const MultiplicityMat
 	std::pair<unsigned int, unsigned int> max_degrees = maximum_degrees(mmat);
 	unsigned int dX = max_degrees.first;
 	unsigned int dY = max_degrees.second;
-	std::cout << "dX = " << dX << ", dY = " << dY << std::endl;
+
+    //DebugMsg(0,verbose) << "dX = ";
+    //DebugStream() << "dX = " << "toto" << std::endl;
+	DEBUG_OUT(verbosity > 0, "dX = " << dX << ", dY = " << dY << std::endl);
 
 	init_G(dY);
     it_number = 0;
@@ -78,17 +74,17 @@ const gf::GFq_BivariatePolynomial& GSKV_Interpolation::run(const MultiplicityMat
 
 	// outer loop on multiplicity matrix elements
 
-    std::cout << "Loop on multiplicity matrix elements:" << std::endl;
+    DEBUG_OUT(verbosity > 0, "Loop on multiplicity matrix elements:" << std::endl);
 	MultiplicityMatrix::traversing_iterator m_it(mmat.begin());
 
 	for (; m_it != mmat.end(); ++m_it)
 	{
-        std::cout << "*** New point iX = " << m_it.iX() << " iY = " << m_it.iY() << " mult = " << m_it.multiplicity() <<  std::endl;
+        DEBUG_OUT(verbosity > 0, "*** New point iX = " << m_it.iX() << " iY = " << m_it.iY() << " mult = " << m_it.multiplicity() <<  std::endl);
 		process_point(m_it.iX(), m_it.iY(), m_it.multiplicity());
 	}
 
 	const gf::GFq_BivariatePolynomial& Q = final_G();
-	std::cout << "Q(X,Y) = " << Q << std::endl;
+	DEBUG_OUT(verbosity > 0, "Q(X,Y) = " << Q << std::endl);
     return Q;
 }
 
@@ -128,7 +124,7 @@ void GSKV_Interpolation::process_point(unsigned int iX, unsigned int iY, unsigne
 	{
 		for (unsigned int nu = 0; nu < multiplicity-mu; nu++)
 		{
-			process_hasse(x_values[iX], y_values[iY], mu, nu);
+			process_hasse(evaluation_values.get_x_values()[iX], evaluation_values.get_y_values()[iY], mu, nu);
 		}
 	}
 }
@@ -145,7 +141,7 @@ void GSKV_Interpolation::process_hasse(const gf::GFq_Element& x, const gf::GFq_E
     bool zero_Hasse = true;
     std::string ind("");        //!< indicator character for debug display
     
-    std::cout << "it=" << it_number << " x=" << x << " y=" << y << " mu=" << mu << " nu=" << nu << " G.size()=" << G.size() << std::endl;
+    DEBUG_OUT(verbosity > 1, "it=" << it_number << " x=" << x << " y=" << y << " mu=" << mu << " nu=" << nu << " G.size()=" << G.size() << std::endl);
     
     // Hasse derivatives calculation
     
@@ -192,26 +188,26 @@ void GSKV_Interpolation::process_hasse(const gf::GFq_Element& x, const gf::GFq_E
         }
         
         // debug print stuff
-        std::cout << ind << " G_" << it_number << "[" << ig << "] = " << *it_g << std::endl;
+        DEBUG_OUT(verbosity > 1, ind << " G_" << it_number << "[" << ig << "] = " << *it_g << std::endl);
         
         if (calcG[ig])
         {
-            std::cout << "  D_" << it_number << "," << ig << " = " << hasse_xy_G.back() << std::endl;
-            std::cout << "  lod = " << lodG[ig] << std::endl;
+            DEBUG_OUT(verbosity > 1, "  D_" << it_number << "," << ig << " = " << hasse_xy_G.back() << std::endl);
+            DEBUG_OUT(verbosity > 1, "  lod = " << lodG[ig] << std::endl);
         }
         else
         {
-            std::cout << "  lod = " << lodG[ig] << std::endl;
+            DEBUG_OUT(verbosity > 1, "  lod = " << lodG[ig] << std::endl);
         }
     }
 
     if (zero_Hasse)
     {
-        std::cout << "All Hasse derivatives are 0 so G_" << it_number+1 << " = G_" << it_number << std::endl;
+        DEBUG_OUT(verbosity > 1, "All Hasse derivatives are 0 so G_" << it_number+1 << " = G_" << it_number << std::endl);
     }
     else
     {
-        std::cout << "Minimal LOD polynomial G_" << it_number << "[" << ig_lodmin << "]" << std::endl;
+        DEBUG_OUT(verbosity > 1, "Minimal LOD polynomial G_" << it_number << "[" << ig_lodmin << "]" << std::endl);
     }
     
     // compute next values in G
@@ -262,7 +258,7 @@ void GSKV_Interpolation::process_hasse(const gf::GFq_Element& x, const gf::GFq_E
     G.assign(G_next.begin(), G_next.end());
     lodG.assign(lodG_next.begin(), lodG_next.end());
     it_number++;
-    std::cout << std::endl;
+DEBUG_OUT(verbosity > 1, std::endl);
 }
 
 // ================================================================================================
@@ -274,7 +270,7 @@ const gf::GFq_BivariatePolynomial& GSKV_Interpolation::final_G()
     unsigned int ig = 0;
     std::vector<gf::GFq_BivariatePolynomial>::const_iterator it_g = G.begin();
 
-    std::cout << "it=" << it_number << " final result" << std::endl;
+    DEBUG_OUT(verbosity > 1, "it=" << it_number << " final result" << std::endl);
 
     for (; it_g != G.end(); ++it_g, ig++)
     {
@@ -284,11 +280,11 @@ const gf::GFq_BivariatePolynomial& GSKV_Interpolation::final_G()
     		final_ig = ig;
     	}
 
-    	std::cout << "o G_" << it_number << "[" << ig << "] = " << *it_g << std::endl;
-    	std::cout << "  lod = " << lodG[ig] << std::endl;
+    	DEBUG_OUT(verbosity > 1, "o G_" << it_number << "[" << ig << "] = " << *it_g << std::endl);
+    	DEBUG_OUT(verbosity > 1, "  lod = " << lodG[ig] << std::endl);
     }
 
-    std::cout << "Minimal LOD polynomial G_" << it_number << "[" << final_ig << "]" << std::endl;
+    DEBUG_OUT(verbosity > 1, "Minimal LOD polynomial G_" << it_number << "[" << final_ig << "]" << std::endl);
     return G[final_ig];
 }
 

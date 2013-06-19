@@ -28,6 +28,7 @@
 #include "GF2_Element.h"
 #include "GF2_Polynomial.h"
 #include "GFq.h"
+#include "EvaluationValues.h"
 #include "ReliabilityMatrix.h"
 #include "MultiplicityMatrix.h"
 #include "GSKV_Interpolation.h"
@@ -99,8 +100,11 @@ int main(int argc, char *argv[])
         std::cout << "M(" << m_it.iX() << "," << m_it.iY() << ") = " << m_it.multiplicity() << std::endl;
     }
 
-    rssoft::GSKV_Interpolation gskv(gf8, 5);
+    rssoft::EvaluationValues evaluation_values(gf8); // use default
+    rssoft::GSKV_Interpolation gskv(gf8, 5, evaluation_values);
     rssoft::RR_Factorization rr(gf8, 5);
+    gskv.set_verbosity(2);
+    rr.set_verbosity(2);
     
     std::cout << std::endl;
     std::vector<rssoft::gf::GFq_Polynomial>& res_polys = rr.run(gskv.run(mat_M));
@@ -115,7 +119,7 @@ int main(int argc, char *argv[])
         std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
     }
     
-    rssoft::FinalEvaluation final_evaluation(gf8, gskv.get_evaluation_points(), gskv.get_symbols());
+    rssoft::FinalEvaluation final_evaluation(gf8, evaluation_values);
     final_evaluation.run(res_polys, mat_Pi);
     std::cout << "Codewords:" << std::endl;
     final_evaluation.print_codewords(std::cout, final_evaluation.get_codewords());

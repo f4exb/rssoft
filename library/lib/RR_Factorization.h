@@ -137,6 +137,14 @@ public:
 	 * Initialization before run
 	 */
 	void init();
+    
+    /**
+     * Set verbosity level, 0 for none. This is active only in debug mode (CPPFLAGS=-D_DEBUG)
+     */ 
+    void set_verbosity(unsigned int _verbosity)
+    {
+        verbosity = _verbosity;
+    }
 
 	/**
 	 * Run factorization of given polynomial
@@ -155,6 +163,8 @@ protected:
 
 	const gf::GFq& gf; //!< Reference to the Galois Field being used
 	unsigned int k;    //!< k as in RS(n,k)
+    unsigned int verbosity; //!< verbosity level, 0 for none
+    
 	unsigned int t;    //!< nodes but root node count
 	std::vector<gf::GFq_Polynomial> F; //!< Result list of f(X) polynomials
 };

@@ -26,6 +26,7 @@
 #include "GFq_Polynomial.h"
 #include "GFq_BivariatePolynomial.h"
 #include "RSSoft_Exception.h"
+#include "Debug.h"
 
 namespace rssoft
 {
@@ -54,7 +55,8 @@ RR_Node::RR_Node(RR_Node *_parent,
 RR_Factorization::RR_Factorization(const gf::GFq& _gf, unsigned int _k) :
 		gf(_gf),
 		k(_k),
-		t(0)
+		t(0),
+        verbosity(0)
 {
 
 }
@@ -97,7 +99,7 @@ gf::GFq_Polynomial RR_Factorization::node_run(RR_Node& rr_node)
 	Qy.rootChien(roots_y);
 	std::vector<rssoft::gf::GFq_Element>::const_iterator ry_it = roots_y.begin();
     
-    std::cout << "*** Node #" << rr_node.get_id() << ": " << rr_node.get_degree() << " " << rr_node.get_coeff() << std::endl;
+    DEBUG_OUT(verbosity > 0, "*** Node #" << rr_node.get_id() << ": " << rr_node.get_degree() << " " << rr_node.get_coeff() << std::endl);
     
     if (ry_it != roots_y.end())
     {
@@ -122,7 +124,7 @@ gf::GFq_Polynomial RR_Factorization::node_run(RR_Node& rr_node)
                 monos_Yv.push_back(m_XY);
                 Yv.init(monos_Yv);
                 gf::GFq_BivariatePolynomial Qv = star(Qu(X1Y0,Yv));
-                std::cout << "    ry = " << *ry_it << " : Qv = " << Qv << std::endl;
+                DEBUG_OUT(verbosity > 0, "    ry = " << *ry_it << " : Qv = " << Qv << std::endl);
                 
                 // Optimization: anticipate behaviour at child node
                 bool Qv_for_Y_eq_0_is_0 = (Qv.get_X_0().is_zero()); // Qv(Y=0) = 0
@@ -130,33 +132,33 @@ gf::GFq_Polynomial RR_Factorization::node_run(RR_Node& rr_node)
                 {
                     if (rr_node.get_degree() < k-1)
                     { // trace back this route from node v
-                    	std::cout << "    -> trace back this route from node v: " << (rr_node.get_coeff()*(X1^rr_node.get_degree()))+(*ry_it*(X1^(rr_node.get_degree()+1))) << std::endl;
+                    	DEBUG_OUT(verbosity > 1, "    -> trace back this route from node v: " << (rr_node.get_coeff()*(X1^rr_node.get_degree()))+(*ry_it*(X1^(rr_node.get_degree()+1))) << std::endl);
                         return (rr_node.get_coeff()*(X1^rr_node.get_degree()))+(*ry_it*(X1^(rr_node.get_degree()+1))); 
                     }
                     else
                     { // trace back this route from node u
-                    	std::cout << "    -> trace back this route from node u: " << rr_node.get_coeff()*(X1^rr_node.get_degree()) << std::endl;
+                    	DEBUG_OUT(verbosity > 1, "    -> trace back this route from node u: " << rr_node.get_coeff()*(X1^rr_node.get_degree()) << std::endl);
                         return rr_node.get_coeff()*(X1^rr_node.get_degree()); 
                     }
                 }
                 else if ((rr_node.get_degree() == k-1) && !Qv_for_Y_eq_0_is_0)
                 {
-                	std::cout << "    -> invalidate the route by returning an invalid polynomial" << std::endl;
+                	DEBUG_OUT(verbosity > 1, "    -> invalidate the route by returning an invalid polynomial" << std::endl);
                 	return gf::GFq_Polynomial(gf); // invalidate the route by returning an invalid polynomial
                 }
 				else
 				{ // construct a child node
 					t++;
-					std::cout << "    child #" << t << std::endl;
+					DEBUG_OUT(verbosity > 1, "    child #" << t << std::endl);
 					RR_Node child_node(&rr_node, Qv, *ry_it, t);
 					gf::GFq_Polynomial part_Fv = node_run(child_node); // Recursive call
 
 					if (rr_node.get_degree() == -1) // we are at the root node
 					{
-						std::cout << "    we are at root node" << std::endl;
+						DEBUG_OUT(verbosity > 0, "    we are at root node" << std::endl);
 						if (part_Fv.is_valid())
 						{
-							std::cout << "    Fi = " << part_Fv << std::endl;
+							DEBUG_OUT(verbosity > 0, "    Fi = " << part_Fv << std::endl);
 							F.push_back(part_Fv); // collect result
 						}
 					}
@@ -164,12 +166,12 @@ gf::GFq_Polynomial RR_Factorization::node_run(RR_Node& rr_node)
 					{
 						if (!part_Fv.is_valid())
 						{
-							std::cout << "    -> propagate invalid route" << std::endl;
+							DEBUG_OUT(verbosity > 1, "    -> propagate invalid route" << std::endl);
 							return part_Fv;
 						}
 						else
 						{
-							std::cout << "    -> return partial polynomial: " << ((rr_node.get_coeff()*(X1^rr_node.get_degree())) + part_Fv) <<  std::endl;
+							DEBUG_OUT(verbosity > 1, "    -> return partial polynomial: " << ((rr_node.get_coeff()*(X1^rr_node.get_degree())) + part_Fv) <<  std::endl);
 							return (rr_node.get_coeff()*(X1^rr_node.get_degree())) + part_Fv;
 						}
 					}

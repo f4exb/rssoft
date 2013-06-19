@@ -35,6 +35,7 @@ namespace gf
 class GFq_Polynomial;
 }
 
+class EvaluationValues;
 class ReliabilityMatrix;
 
 /**
@@ -138,12 +139,9 @@ public:
     /**
      * Constructor
      * \param _gf Galois Field in use
-     * \param _evaluation_points Evaluation points of codewords in reliability matrix column order
-     * \param _symbols Symbols of the codeword in reliability matrix row order
+     * \param _evaluation_values Evaluation X,Y values used for coding
      */
-    FinalEvaluation(const gf::GFq& _gf, 
-        const std::vector<gf::GFq_Element>& _evaluation_points, 
-        const std::vector<gf::GFq_Element>& _symbols);
+    FinalEvaluation(const gf::GFq& _gf, const EvaluationValues& _evaluation_values);
         
     /**
      * Destructor. Nothing special
@@ -194,8 +192,7 @@ public:
 
 protected:
     const gf::GFq& gf; //!< Galois Field in use
-    const std::vector<gf::GFq_Element>& evaluation_points; //!< Evaluation points of codewords in reliability matrix column order
-    const std::vector<gf::GFq_Element>& symbols; //!< Symbols of the codeword in reliability matrix row order
+    const EvaluationValues& evaluation_values; //!< Evaluation X,Y values used for coding
     std::map<gf::GFq_Element, unsigned int> symbol_index; //!< Symbol index in reliability matrix row order
     std::vector<ProbabilityCodeword> codewords; //!< The codewords (overriden at each run)
     std::vector<ProbabilityCodeword> messages; //!< The encoded messages (overriden at each run)

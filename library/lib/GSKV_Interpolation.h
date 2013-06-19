@@ -38,16 +38,18 @@ class GFq;
 }
 
 class MultiplicityMatrix;
+class EvaluationValues;
 
 class GSKV_Interpolation
 {
 public:
 	/**
 	 * Constructor
-	 * \param gf Reference to the Galois Field being used
-	 * \param k as in RS(n,k)
+	 * \param _gf Reference to the Galois Field being used
+	 * \param _k as in RS(n,k)
+	 * \param _evaluation_values Evaluation X,Y values used for coding
 	 */
-	GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k);
+	GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k, const EvaluationValues& _evaluation_values);
 
 	/**
 	 * Destructor
@@ -57,19 +59,20 @@ public:
     /**
      * Get the X evaluation points used to calculate candidate codewords (horizontal or column matrix wise)
      */
-    const std::vector<gf::GFq_Element>& get_evaluation_points() const
+    const EvaluationValues& get_evaluation_values() const
     {
-        return x_values;
+        return evaluation_values;
     }
 
     /**
-     * Get the Y symbols that compose codewords (vertical or row matrix wise)
+     * Set or reset verbose mode.
+     * \param _verbose Verbose level. 0 to shut down any debug message. Active only in debug mode (_DEBUG defined)
      */
-    const std::vector<gf::GFq_Element>& get_symbols() const
+    void set_verbosity(unsigned int _verbosity)
     {
-        return y_values;
+        verbosity = _verbosity;
     }
-
+    
 	/**
 	 * Run the interpolation based on given multiplicity matrix
      * \return reference to the result polynomial
@@ -114,8 +117,8 @@ protected:
 	// fixed parameters
 	const gf::GFq& gf; //!< Reference to the Galois Field being used
 	unsigned int k; //!< k factor as in RS(n,k)
-	std::vector<gf::GFq_Element> x_values; //!< Interpolation X values
-	std::vector<gf::GFq_Element> y_values; //!< Interpolation Y values
+	const EvaluationValues& evaluation_values; //!< Interpolation X,Y values
+    unsigned int verbosity; //!< Verbose level, 0 to shut down any debug message
 
 	// parameters changing at each process run
 	std::vector<gf::GFq_BivariatePolynomial> G; //!< The G list of polynomials

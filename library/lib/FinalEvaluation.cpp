@@ -22,6 +22,7 @@
  */
 #include "FinalEvaluation.h"
 #include "GFq_Polynomial.h"
+#include "EvaluationValues.h"
 #include "ReliabilityMatrix.h"
 #include "RSSoft_Exception.h"
  
@@ -67,17 +68,14 @@ void ProbabilityCodeword::print_codeword(std::ostream& os) const
 }
 
 // ================================================================================================
-FinalEvaluation::FinalEvaluation(const gf::GFq& _gf, 
-        const std::vector<gf::GFq_Element>& _evaluation_points, 
-        const std::vector<gf::GFq_Element>& _symbols) :
+FinalEvaluation::FinalEvaluation(const gf::GFq& _gf, const EvaluationValues& _evaluation_values) :
     gf(_gf),
-    evaluation_points(_evaluation_points),
-    symbols(_symbols)
+    evaluation_values(_evaluation_values)
 {
-    std::vector<gf::GFq_Element>::const_iterator s_it = symbols.begin();
+    std::vector<gf::GFq_Element>::const_iterator s_it = evaluation_values.get_symbols().begin();
     unsigned int i_s = 0;
     
-    for (; s_it != symbols.end(); ++s_it, i_s++)
+    for (; s_it != evaluation_values.get_symbols().end(); ++s_it, i_s++)
     {
         symbol_index.insert(std::make_pair(*s_it, i_s));
     }
@@ -98,7 +96,7 @@ void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, co
     {
         throw RSSoft_Exception("Reliability matrix number of rows is incompatible with GF size");
     }
-    else if (relmat.get_message_length()!= evaluation_points.size())
+    else if (relmat.get_message_length()!= evaluation_values.get_evaluation_points().size())
     {
         throw RSSoft_Exception("Reliability matrix number of columns is incompatible with the number of evaluation points");
     }
@@ -112,10 +110,10 @@ void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, co
             codewords.push_back(tmp_pc);
             messages.push_back(tmp_pc);
             float proba_score = 0.0; // We will use log scale in dB/symbol
-            std::vector<gf::GFq_Element>::const_iterator evalpt_it = evaluation_points.begin();
+            std::vector<gf::GFq_Element>::const_iterator evalpt_it = evaluation_values.get_evaluation_points().begin();
             unsigned int i_pt = 0;
             
-            for (; evalpt_it != evaluation_points.end(); ++evalpt_it, i_pt++)
+            for (; evalpt_it != evaluation_values.get_evaluation_points().end(); ++evalpt_it, i_pt++)
             {
                 gf::GFq_Element eval = (*poly_it)(*evalpt_it); // Evaluate polynomial at current point
                 codewords.back().get_codeword().push_back(eval.poly()); // Store the corresponding symbol in the codeword
@@ -124,8 +122,8 @@ void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, co
             }
             
             // Probability score in dB is divided by the number of evaluation points used. This is an attempt to get a common metric among codes of different lengths
-            codewords.back().get_probability_score() = proba_score/evaluation_points.size(); // Store the probability score in the probability score weighted codeword
-            messages.back().get_probability_score() = proba_score/evaluation_points.size(); // Store the message with probability score.
+            codewords.back().get_probability_score() = proba_score/evaluation_values.get_evaluation_points().size(); // Store the probability score in the probability score weighted codeword
+            messages.back().get_probability_score() = proba_score/evaluation_values.get_evaluation_points().size(); // Store the message with probability score.
             poly_it->get_poly_symbols(messages.back().get_codeword()); // Message is polynomial's coefficients
         }
     }
@@ -145,7 +143,7 @@ void FinalEvaluation::print_codewords(std::ostream& os, const std::vector<Probab
 	{
 		std::streamsize prec = os.precision();
 		os << "#" << i_w << ": (" << std::setprecision(1) << w_it->get_probability_score() << " dB/symbol) ";
-		os << std::setprecision(prec);
+		os.precision(prec);
 		w_it->print_codeword(os);
 		os << std::endl;
 	}

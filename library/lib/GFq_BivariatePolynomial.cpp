@@ -236,13 +236,11 @@ void GFq_BivariatePolynomial::sum(std::vector<GFq_BivariateMonomial>& _sum_monom
 		{
 			if (a_it == a_monomials.end())
 			{
-				//std::cout << "tail copy b " << *b_it << std::endl;
 				sum_monomials.push_back(static_cast<GFq_BivariateMonomial>(*b_it));
 				++b_it;
 			}
 			else if (b_it ==  b_monomials.end())
 			{
-				//std::cout << "tail copy a " << *a_it << std::endl;
 				sum_monomials.push_back(static_cast<GFq_BivariateMonomial>(*a_it));
 				++a_it;
 			}
@@ -250,19 +248,16 @@ void GFq_BivariatePolynomial::sum(std::vector<GFq_BivariateMonomial>& _sum_monom
 			{
 				if (mono_exp_compare(a_it->first, b_it->first)) // a monomial is less than b
 				{
-					//std::cout << "copy a " << *a_it << " b is " << *b_it << std::endl;
 					sum_monomials.push_back(static_cast<GFq_BivariateMonomial>(*a_it));
 					++a_it;
 				}
 				else if (mono_exp_compare(b_it->first, a_it->first)) // b monomial is less than a
 				{
-					//std::cout << "copy b " << *b_it << " a is " << *a_it << std::endl;
 					sum_monomials.push_back(static_cast<GFq_BivariateMonomial>(*b_it));
 					++b_it;
 				}
 				else // monomial orders are equal (thus their exponents are equal) so coefficient can be summed up
 				{
-					//std::cout << "copy sum " << *a_it << " + " << *b_it << std::endl;
 					sum_monomials.push_back(static_cast<GFq_BivariateMonomial>(*a_it));
 					sum_monomials.back().second += b_it->second;
 					++a_it;
@@ -403,14 +398,11 @@ void GFq_BivariatePolynomial::pow(std::map<GFq_BivariateMonomialExponents, GFq_E
 
 						if (mono_it == pt_monomials.end()) // exponents pair does not exist yet
 						{
-							//std::cout << "new: " << *at_it << " * " << *a_it << " = " << mono_product << std::endl;
 							pt_monomials.insert(mono_product); // insert the new monomial
 						}
 						else // exponents pair already exist
 						{
-							//std::cout << "old: " << *at_it << " * " << *a_it << " = " << mono_product << std::endl;
 							mono_it->second += mono_product.second; // add coefficients
-							//std::cout << " -> " << *mono_it << std::endl;
 						}
 					}
 				}
