@@ -28,12 +28,14 @@
 #include "GF2_Element.h"
 #include "GF2_Polynomial.h"
 #include "GFq.h"
+#include "GF_Utils.h"
 #include "EvaluationValues.h"
 #include "ReliabilityMatrix.h"
 #include "MultiplicityMatrix.h"
 #include "GSKV_Interpolation.h"
 #include "RR_Factorization.h"
 #include "FinalEvaluation.h"
+#include "RS_Encoding.h"
 #include <iostream>
 #include <iomanip>
 
@@ -60,8 +62,23 @@ rssoft::gf::GFq gf8(3,ppoly);
 // ================================================================================================
 int main(int argc, char *argv[])
 {
+    rssoft::EvaluationValues evaluation_values(gf8); // use default
+
+    rssoft::RS_Encoding rs_encoding(gf8, 5, evaluation_values);
+    rssoft::gf::GFq_Symbol msg_sy[] = {2, 6, 6, 3, 1};
+    std::vector<rssoft::gf::GFq_Symbol> message(msg_sy, msg_sy + sizeof(msg_sy)/sizeof(rssoft::gf::GFq_Symbol));
+    std::cout << "Message: ";
+    rssoft::gf::print_symbols_vector(std::cout, message);
+    std::vector<rssoft::gf::GFq_Symbol> codeword;
+    rs_encoding.run(message, codeword);
+    std::cout << " Codeword: ";
+    rssoft::gf::print_symbols_vector(std::cout, codeword);
+    std::cout << std::endl;
+    //std::cout << std::endl;
+
 	rssoft::ReliabilityMatrix mat_Pi(3,7);
 
+	std::cout << std::endl;
 	std::cout << "Power matrix:" << std::endl;
 	mat_Pi.enter_symbol_data(pwr_S0);
 	mat_Pi.enter_symbol_data(pwr_S1);
@@ -100,7 +117,6 @@ int main(int argc, char *argv[])
         std::cout << "M(" << m_it.iX() << "," << m_it.iY() << ") = " << m_it.multiplicity() << std::endl;
     }
 
-    rssoft::EvaluationValues evaluation_values(gf8); // use default
     rssoft::GSKV_Interpolation gskv(gf8, 5, evaluation_values);
     rssoft::RR_Factorization rr(gf8, 5);
     gskv.set_verbosity(2);

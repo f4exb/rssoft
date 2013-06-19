@@ -40,8 +40,8 @@ ProbabilityCodeword::ProbabilityCodeword()
 {}
  
 // ================================================================================================
-ProbabilityCodeword::ProbabilityCodeword(float probability, const Codeword& codeword) :
-    std::pair<float, Codeword>(probability, codeword)
+ProbabilityCodeword::ProbabilityCodeword(float probability, const std::vector<gf::GFq_Symbol>& codeword) :
+    std::pair<float, std::vector<gf::GFq_Symbol> >(probability, codeword)
 {}
  
 // ================================================================================================
@@ -51,19 +51,19 @@ ProbabilityCodeword::~ProbabilityCodeword()
 // ================================================================================================
 void ProbabilityCodeword::print_codeword(std::ostream& os) const
 {
-    Codeword::const_iterator c_it = second.begin();
+	std::vector<rssoft::gf::GFq_Symbol>::const_iterator c_it = second.begin();
     os << "[";
-    
+
     for (; c_it != second.end(); ++c_it)
     {
         if (c_it != second.begin())
         {
             os << ", ";
         }
-        
+
         os <<  *c_it;
     }
-    
+
     os << "]";
 }
 
@@ -72,7 +72,7 @@ FinalEvaluation::FinalEvaluation(const gf::GFq& _gf, const EvaluationValues& _ev
     gf(_gf),
     evaluation_values(_evaluation_values)
 {
-    std::vector<gf::GFq_Element>::const_iterator s_it = evaluation_values.get_symbols().begin();
+	std::vector<gf::GFq_Element>::const_iterator s_it = evaluation_values.get_symbols().begin();
     unsigned int i_s = 0;
     
     for (; s_it != evaluation_values.get_symbols().end(); ++s_it, i_s++)

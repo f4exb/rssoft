@@ -13,7 +13,8 @@ librssoft_la_SOURCES = GFq.cpp \
 	GSKV_Interpolation.cpp \
 	RR_Factorization.cpp \
     FinalEvaluation.cpp \
-    EvaluationValues.cpp
+    EvaluationValues.cpp \
+    RS_Encoding.cpp
 
 #librssoft_la_LIBADD = -lrt 
 

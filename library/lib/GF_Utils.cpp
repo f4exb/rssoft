@@ -75,5 +75,43 @@ unsigned int binomial_coeff(unsigned int n, unsigned int k)
     }
 }
 
+// ================================================================================================
+void print_symbols_vector(std::ostream& os, const std::vector<GFq_Symbol>& v)
+{
+	std::vector<rssoft::gf::GFq_Symbol>::const_iterator c_it = v.begin();
+    os << "[";
+
+    for (; c_it != v.end(); ++c_it)
+    {
+        if (c_it != v.begin())
+        {
+            os << ", ";
+        }
+
+        os <<  *c_it;
+    }
+
+    os << "]";
 }
+
+// ================================================================================================
+void print_elements_vector(std::ostream& os, const std::vector<GFq_Element>& v)
+{
+	std::vector<rssoft::gf::GFq_Element>::const_iterator c_it = v.begin();
+    os << "[";
+
+    for (; c_it != v.end(); ++c_it)
+    {
+        if (c_it != v.begin())
+        {
+            os << ", ";
+        }
+
+        os <<  *c_it;
+    }
+
+    os << "]";
 }
+
+} // namespace gf
+} // namespace rssoft

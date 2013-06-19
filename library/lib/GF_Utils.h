@@ -24,6 +24,9 @@
 #ifndef __GF_UTILS_H__
 #define __GF_UTILS_H__
 
+#include "GFq.h"
+#include "GFq_Element.h"
+
 namespace rssoft
 {
 namespace gf
@@ -50,7 +53,10 @@ unsigned int factorial(unsigned int x, unsigned int result = 1);
  */
 unsigned int binomial_coeff(unsigned int n, unsigned int k);
 
-}
-}
+void print_symbols_vector(std::ostream& os, const std::vector<GFq_Symbol>& v);
+void print_elements_vector(std::ostream& os, const std::vector<GFq_Element>& v);
+
+} // namespace gf
+} // namespace rssoft
 
 #endif // __GF_UTILS_H__

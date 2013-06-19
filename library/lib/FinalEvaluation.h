@@ -25,6 +25,7 @@
 
 #include "GFq.h"
 #include "GFq_Element.h"
+#include "GF_Utils.h"
 #include <vector>
 #include <map>
 
@@ -39,14 +40,9 @@ class EvaluationValues;
 class ReliabilityMatrix;
 
 /**
- * \brief a Codeword
- */
-typedef std::vector<gf::GFq_Symbol> Codeword;
-
-/**
  * \brief Probability score weighted codeword 
  */
-class ProbabilityCodeword : public std::pair<float, Codeword>
+class ProbabilityCodeword : public std::pair<float, std::vector<gf::GFq_Symbol> >
 {
 public:
     /**
@@ -58,7 +54,7 @@ public:
     /**
      * Constructs with the codeword as the copy of the given codeword
      */
-    ProbabilityCodeword(float probability, const Codeword& codeword);
+    ProbabilityCodeword(float probability, const std::vector<gf::GFq_Symbol>& codeword);
     
     /**
      * Destructor. Nothing special
@@ -100,7 +96,7 @@ public:
     /** 
      * Get the codeword R/W
      */
-    std::vector<gf::GFq_Symbol>& get_codeword() 
+    std::vector<gf::GFq_Symbol>& get_codeword()
     {
         return second;
     }
@@ -156,7 +152,7 @@ public:
     /**
      * Get the best probability scoring codeword
      */
-    const Codeword& get_best_codeword() const
+    const std::vector<gf::GFq_Symbol>& get_best_codeword() const
     {
         return codewords.begin()->get_codeword();
     }
@@ -172,7 +168,7 @@ public:
     /**
      * Get the best probability scoring message
      */
-    const Codeword& get_best_message() const
+    const std::vector<gf::GFq_Symbol>& get_best_message() const
     {
         return messages.begin()->get_codeword();
     }
