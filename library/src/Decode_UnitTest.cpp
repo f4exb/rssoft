@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
         std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
     }
     
-    rssoft::FinalEvaluation final_evaluation(gf8, evaluation_values);
+    rssoft::FinalEvaluation final_evaluation(gf8, 5, evaluation_values);
     final_evaluation.run(res_polys, mat_Pi);
     std::cout << "Codewords:" << std::endl;
     final_evaluation.print_codewords(std::cout, final_evaluation.get_codewords());

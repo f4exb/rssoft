@@ -113,5 +113,24 @@ void print_elements_vector(std::ostream& os, const std::vector<GFq_Element>& v)
     os << "]";
 }
 
+// ================================================================================================
+bool compare_symbol_vectors(const std::vector<GFq_Symbol>& v1, const std::vector<GFq_Symbol>& v2)
+{
+	if (v1.size() != v2.size())
+	{
+		return false;
+	}
+
+	for (unsigned int i=0; i<v1.size(); i++)
+	{
+		if (v1[i] != v2[i])
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 } // namespace gf
 } // namespace rssoft

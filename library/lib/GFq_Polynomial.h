@@ -152,9 +152,9 @@ public:
 	/**
 	 * Gets the coefficients vector as symbols
 	 */
-    void get_poly_symbols(std::vector<GFq_Symbol>& symbols) const
+    void get_poly_symbols(std::vector<GFq_Symbol>& symbols, unsigned int size=0) const
     {
-        symbols.resize(poly.size());
+        symbols.resize((size == 0 ? poly.size() : size));
         std::transform(poly.begin(), poly.end(), symbols.begin(), gfq_element_to_symbol);
     }
 
@@ -205,6 +205,7 @@ public:
     /**
      * Find non null roots of polynomial by Chien search. Basically this is an exhaustive search
      * optimized for hardware implementation but is also interesting in software.
+     * Includes null root afterwards if constant coefficient is zero.
      * see: http://www.stanford.edu/class/ee387/handouts/notes7.pdf
      * \param roots Vector of root field elements filled by the method
      */
@@ -280,6 +281,13 @@ std::pair<GFq_Polynomial, GFq_Polynomial> div(const GFq_Polynomial& a,
 
 /**
  * Find non null roots of polynomial by exhaustive search
+ * \param a Polynomial which roots are searched
+ * \return vector of root field elements
+ */
+std::vector<GFq_Element> rootex_nz(const GFq_Polynomial& a);
+
+/**
+ * Find roots of polynomial by exhaustive search
  * \param a Polynomial which roots are searched
  * \return vector of root field elements
  */

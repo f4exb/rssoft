@@ -505,6 +505,11 @@ void GFq_Polynomial::rootChien(std::vector<GFq_Element>& roots)
 	std::vector<GFq_Element> wpoly(poly);
 	const GFq_Element zero(gf,0);
 
+	if (poly[0].is_zero())
+	{
+		roots.push_back(zero);
+	}
+
 	for (unsigned int i=0; i < gf.size(); i++)
 	{
 		GFq_Element sum = std::accumulate(wpoly.begin(), wpoly.end(), zero);
@@ -778,7 +783,7 @@ std::pair<GFq_Polynomial, GFq_Polynomial> div(const GFq_Polynomial& dividend,
 }
 
 // ================================================================================================
-std::vector<GFq_Element> rootex(const GFq_Polynomial& a)
+std::vector<GFq_Element> rootex_nz(const GFq_Polynomial& a)
 {
 	std::vector<GFq_Element> roots;
 	const GFq& gf = a.field();
@@ -788,6 +793,23 @@ std::vector<GFq_Element> rootex(const GFq_Polynomial& a)
 		if (a(gf.alpha(i)) == 0)
 		{
 			roots.push_back(GFq_Element(gf,gf.alpha(i)));
+		}
+	}
+
+	return roots;
+}
+
+// ================================================================================================
+std::vector<GFq_Element> rootex(const GFq_Polynomial& a)
+{
+	std::vector<GFq_Element> roots;
+	const GFq& gf = a.field();
+
+	for (unsigned int i=0; i<gf.size()+1; i++)
+	{
+		if (a(i) == 0)
+		{
+			roots.push_back(GFq_Element(gf,i));
 		}
 	}
 

@@ -68,8 +68,9 @@ void ProbabilityCodeword::print_codeword(std::ostream& os) const
 }
 
 // ================================================================================================
-FinalEvaluation::FinalEvaluation(const gf::GFq& _gf, const EvaluationValues& _evaluation_values) :
+FinalEvaluation::FinalEvaluation(const gf::GFq& _gf, unsigned int _k, const EvaluationValues& _evaluation_values) :
     gf(_gf),
+    k(_k),
     evaluation_values(_evaluation_values)
 {
 	std::vector<gf::GFq_Element>::const_iterator s_it = evaluation_values.get_symbols().begin();
@@ -124,7 +125,7 @@ void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, co
             // Probability score in dB is divided by the number of evaluation points used. This is an attempt to get a common metric among codes of different lengths
             codewords.back().get_probability_score() = proba_score/evaluation_values.get_evaluation_points().size(); // Store the probability score in the probability score weighted codeword
             messages.back().get_probability_score() = proba_score/evaluation_values.get_evaluation_points().size(); // Store the message with probability score.
-            poly_it->get_poly_symbols(messages.back().get_codeword()); // Message is polynomial's coefficients
+            poly_it->get_poly_symbols(messages.back().get_codeword(), k); // Message is polynomial's coefficients
         }
     }
     
@@ -142,7 +143,7 @@ void FinalEvaluation::print_codewords(std::ostream& os, const std::vector<Probab
 	for (; w_it != words.end(); ++w_it, i_w++)
 	{
 		std::streamsize prec = os.precision();
-		os << "#" << i_w << ": (" << std::setprecision(1) << w_it->get_probability_score() << " dB/symbol) ";
+		os << "#" << i_w << ": (" << std::setprecision(3) << w_it->get_probability_score() << " dB/symbol) ";
 		os.precision(prec);
 		w_it->print_codeword(os);
 		os << std::endl;

@@ -40,14 +40,14 @@ EvaluationValues::EvaluationValues(const gf::GFq& _gf) :
 	gf(_gf)
 {
 	// default X interpolation values initialized as increasing powers of alpha starting at a^0 = 1
-	// default Y interpolation values initialized as 0 followed by increasing powers of alpha starting at a^0 = 1
+	// default Y interpolation values initialized as the increasing natural order of symbols
 
 	y_values.push_back(gf::GFq_Element(gf, 0));
 
 	for (unsigned int i=0; i < gf.size(); i++)
 	{
 		x_values.push_back(gf::GFq_Element(gf, gf.alpha(i)));
-		y_values.push_back(gf::GFq_Element(gf, gf.alpha(i)));
+		y_values.push_back(gf::GFq_Element(gf, i+1));
 	}
 }
 

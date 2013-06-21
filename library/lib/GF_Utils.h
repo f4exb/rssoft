@@ -55,6 +55,7 @@ unsigned int binomial_coeff(unsigned int n, unsigned int k);
 
 void print_symbols_vector(std::ostream& os, const std::vector<GFq_Symbol>& v);
 void print_elements_vector(std::ostream& os, const std::vector<GFq_Element>& v);
+bool compare_symbol_vectors(const std::vector<GFq_Symbol>& v1, const std::vector<GFq_Symbol>& v2);
 
 } // namespace gf
 } // namespace rssoft

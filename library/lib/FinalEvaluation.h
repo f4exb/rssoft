@@ -135,9 +135,10 @@ public:
     /**
      * Constructor
      * \param _gf Galois Field in use
+     * \param _k k as in RS(n,k)
      * \param _evaluation_values Evaluation X,Y values used for coding
      */
-    FinalEvaluation(const gf::GFq& _gf, const EvaluationValues& _evaluation_values);
+    FinalEvaluation(const gf::GFq& _gf, unsigned int _k, const EvaluationValues& _evaluation_values);
         
     /**
      * Destructor. Nothing special
@@ -188,6 +189,7 @@ public:
 
 protected:
     const gf::GFq& gf; //!< Galois Field in use
+    unsigned int k; //!< k as in RS(n,k)
     const EvaluationValues& evaluation_values; //!< Evaluation X,Y values used for coding
     std::map<gf::GFq_Element, unsigned int> symbol_index; //!< Symbol index in reliability matrix row order
     std::vector<ProbabilityCodeword> codewords; //!< The codewords (overriden at each run)
