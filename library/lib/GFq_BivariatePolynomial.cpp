@@ -706,6 +706,51 @@ GFq_Polynomial GFq_BivariatePolynomial::get_v_0(bool x_terms) const
 }
 
 // ================================================================================================
+bool GFq_BivariatePolynomial::is_in_X() const
+{
+    return is_in_v(true);
+}
+
+// ================================================================================================
+bool GFq_BivariatePolynomial::is_in_Y() const
+{
+    return is_in_v(false);
+}
+
+// ================================================================================================
+bool GFq_BivariatePolynomial::is_in_v(bool x_terms) const
+{
+	if (monomials.size() == 0)
+	{
+		throw GF_Exception("Bivariate polynomial is invalid");
+	}
+	else
+	{
+		std::map<GFq_BivariateMonomialExponents, GFq_Element, GFq_WeightedRevLex_BivariateMonomial>::const_iterator mono_it = monomials.begin();
+        
+        for (; mono_it != monomials.end(); ++mono_it)
+        {
+            if (x_terms)
+            {
+                if (mono_it->first.second != 0)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (mono_it->first.first != 0)
+                {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+}
+
+// ================================================================================================
 GFq_BivariatePolynomial GFq_BivariatePolynomial::operator()(const GFq_BivariatePolynomial& P, const GFq_BivariatePolynomial& Q) const
 {
 	if (monomials.size() == 0)

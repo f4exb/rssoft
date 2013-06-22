@@ -264,6 +264,7 @@ DEBUG_OUT(verbosity > 1, std::endl);
 // ================================================================================================
 const gf::GFq_BivariatePolynomial& GSKV_Interpolation::final_G()
 {
+    bool first_g = true;
     unsigned int ig_lodmin = 0;    //!< index of polynomial in G with minimal leading order
     unsigned int lodmin = lodG[0]; //!< minimal leading order of polynomials in G
 
@@ -274,18 +275,35 @@ const gf::GFq_BivariatePolynomial& GSKV_Interpolation::final_G()
 
     for (; it_g != G.end(); ++it_g, ig++)
     {
+        /*
+        if (it_g->is_in_X()) // Circumvent design flaw where an X solution only can be returned which cannot be factorized. (Is this a design flaw?)
+        {
+            //DEBUG_OUT(verbosity > 1, "g_" << ig << " is a polynomial in X only" << std::endl);
+            std::cout << "g_" << ig << " is a polynomial in X only with LOD = " << lodG[ig] << std::endl;
+            continue;
+        }
+        */
+    
+        if (first_g)
+        {
+            ig_lodmin = ig;
+            lodmin = lodG[ig];
+            first_g = false;
+        }
+    
     	if (lodG[ig] < lodmin)
     	{
     		lodmin = lodG[ig];
-    		final_ig = ig;
+    		ig_lodmin = ig;
     	}
 
     	DEBUG_OUT(verbosity > 1, "o G_" << it_number << "[" << ig << "] = " << *it_g << std::endl);
     	DEBUG_OUT(verbosity > 1, "  lod = " << lodG[ig] << std::endl);
     }
 
-    DEBUG_OUT(verbosity > 1, "Minimal LOD polynomial G_" << it_number << "[" << final_ig << "]" << std::endl);
-    return G[final_ig];
+    DEBUG_OUT(verbosity > 1, "Minimal LOD polynomial G_" << it_number << "[" << ig_lodmin << "]" << std::endl);
+    //std::cout << "Min LOD = " << lodmin << std::endl;
+    return G[ig_lodmin];
 }
 
 } // namespace rssoft

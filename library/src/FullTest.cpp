@@ -69,7 +69,11 @@ public:
         m(3),
         k(5),
         global_multiplicity(1<<3),
-        verbosity(0)
+        verbosity(0),
+        print_seed(false),
+        seed(0),
+        has_seed(false),
+        _indicator_int(0)
     {
         // http://theory.cs.uvic.ca/gen/poly.html
         rssoft::gf::GF2_Element pp_gf8[4]   = {1,1,0,1};
@@ -100,6 +104,10 @@ public:
     unsigned int k;
     unsigned int global_multiplicity;
     unsigned int verbosity;
+    bool print_seed;
+    unsigned int seed;
+    bool has_seed;
+    int _indicator_int;
 private:
     std::vector<rssoft::gf::GF2_Polynomial> ppolys;
 };
@@ -121,7 +129,32 @@ public:
     int rand_word() 
     {
         int ri; 
-        unsigned int bytes_read = fread((char*)(&ri),sizeof(ri),1,rf);
+        
+        if (use_seed)
+        {
+            ri = (rand()/2) - RAND_MAX;
+        }
+        else
+        {
+            unsigned int bytes_read = fread((char*)(&ri),sizeof(ri),1,rf);
+        }
+        
+        return ri & 0x7fffffff;
+    }
+    
+    unsigned int rand_uword() 
+    {
+        unsigned int ri; 
+        
+        if (use_seed)
+        {
+            ri = rand();
+        }
+        else
+        {
+            unsigned int bytes_read = fread((char*)(&ri),sizeof(ri),1,rf);
+        }
+        
         return ri & 0x7fffffff;
     }
     
@@ -148,8 +181,21 @@ public:
         return cos(2.0*M_PI*a) * sqrt(-2.0*log(b));
     }
     
+    void set_seed(unsigned int seed)
+    {
+        std::cout << "use seed: " << seed << std::endl;
+        srand(seed);
+        use_seed = true;
+    }
+    
+    void unset_seed()
+    {
+        use_seed = false;
+    }
+    
 private:
     FILE *rf;
+    bool use_seed;
 };
 
 
@@ -163,15 +209,19 @@ bool Options::get_options(int argc, char *argv[])
     {
         static struct option long_options[] =
         {
+            // these options set a flag
+            {"print-seed", no_argument, &_indicator_int, 1},
+            // these options do not set a flag
             {"snr", required_argument, 0, 'n'},        
             {"log2-n", required_argument, 0, 'm'},      
             {"k", required_argument, 0, 'k'},              
             {"global-multiplicity", required_argument, 0, 'M'},
             {"verbosity", required_argument, 0, 'v'},              
+            {"seed", required_argument, 0, 's'},              
         };    
         
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:m:k:M:v:", long_options, &option_index);
+        c = getopt_long (argc, argv, "n:m:k:M:v:s:", long_options, &option_index);
         
         if (c == -1) // end of options
         {
@@ -181,6 +231,11 @@ bool Options::get_options(int argc, char *argv[])
         switch(c)
         {
             case 0: // set flag
+                if (strcmp("print-seed", long_options[option_index].name) == 0)
+                {
+                    print_seed = true;
+                }
+                _indicator_int = 0;
                 break;
             case 'n':
                 make_noise = true;
@@ -197,6 +252,10 @@ bool Options::get_options(int argc, char *argv[])
                 break;
             case 'v':
                 status = extract_option<int, unsigned int>(verbosity, 'v');
+                break;
+            case 's':
+                status = extract_option<int, unsigned int>(seed, 's');
+                has_seed = true;
                 break;
             case '?':
                 status = false;
@@ -251,6 +310,17 @@ int main(int argc, char *argv[])
         rssoft::gf::GFq gfq(options.m, options.get_ppoly());
         
         URandom ur;
+        
+        if (options.has_seed)
+        {
+            ur.set_seed(options.seed);
+        }
+        
+        if (options.print_seed)
+        {
+            std::cout << "Seed = " << ur.rand_uword() << std::endl;
+        }
+        
         std::vector<rssoft::gf::GFq_Symbol> message;
         
         for (unsigned int i=0; i<options.k; i++)
@@ -375,38 +445,48 @@ int main(int argc, char *argv[])
         rr.set_verbosity(options.verbosity);
 
         std::cout << std::endl;
-        std::vector<rssoft::gf::GFq_Polynomial>& res_polys = rr.run(gskv.run(mat_M));
-
-        std::cout << res_polys.size() << " result(s)" << std::endl;
-
-        if (res_polys.size() > 0)
+        const rssoft::gf::GFq_BivariatePolynomial& Q = gskv.run(mat_M);
+        std::cout << "Q(X,Y) = " << Q << std::endl;
+        
+        if (Q.is_in_X())
         {
-			std::vector<rssoft::gf::GFq_Polynomial>::iterator respoly_it = res_polys.begin();
-			unsigned int i=0;
-			for (; respoly_it != res_polys.end(); ++respoly_it, i++)
-			{
-				respoly_it->set_alpha_format(true);
-				std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
-			}
+            std::cout << "Interpolation polynomial is in X only and is not factorizable. Hence no solutions" << std::endl;
+        }   
+        else
+        {
+            std::vector<rssoft::gf::GFq_Polynomial>& res_polys = rr.run(Q);
 
-			rssoft::FinalEvaluation final_evaluation(gfq, options.k, evaluation_values);
-			final_evaluation.run(res_polys, mat_Pi);
-			std::cout << "Codewords:" << std::endl;
-			final_evaluation.print_codewords(std::cout, final_evaluation.get_codewords());
-			std::cout << "Messages:" << std::endl;
-			const std::vector<rssoft::ProbabilityCodeword>& messages = final_evaluation.get_messages();
-			final_evaluation.print_codewords(std::cout, messages);
+            std::cout << res_polys.size() << " result(s)" << std::endl;
 
-			std::vector<rssoft::ProbabilityCodeword>::const_iterator ms_it = messages.begin();
-			unsigned int i_m = 0;
+            if (res_polys.size() > 0)
+            {
+                std::vector<rssoft::gf::GFq_Polynomial>::iterator respoly_it = res_polys.begin();
+                unsigned int i=0;
+                for (; respoly_it != res_polys.end(); ++respoly_it, i++)
+                {
+                    respoly_it->set_alpha_format(true);
+                    std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
+                }
 
-			for (; ms_it != messages.end(); ++ms_it, i_m++)
-			{
-				if (rssoft::gf::compare_symbol_vectors(ms_it->get_codeword(), message))
-				{
-					std::cout << "#" << i_m << " found!!!" << std::endl;
-				}
-			}
+                rssoft::FinalEvaluation final_evaluation(gfq, options.k, evaluation_values);
+                final_evaluation.run(res_polys, mat_Pi);
+                std::cout << "Codewords:" << std::endl;
+                final_evaluation.print_codewords(std::cout, final_evaluation.get_codewords());
+                std::cout << "Messages:" << std::endl;
+                const std::vector<rssoft::ProbabilityCodeword>& messages = final_evaluation.get_messages();
+                final_evaluation.print_codewords(std::cout, messages);
+
+                std::vector<rssoft::ProbabilityCodeword>::const_iterator ms_it = messages.begin();
+                unsigned int i_m = 0;
+
+                for (; ms_it != messages.end(); ++ms_it, i_m++)
+                {
+                    if (rssoft::gf::compare_symbol_vectors(ms_it->get_codeword(), message))
+                    {
+                        std::cout << "#" << i_m << " found!!!" << std::endl;
+                    }
+                }
+            }
         }
 
         return 0;

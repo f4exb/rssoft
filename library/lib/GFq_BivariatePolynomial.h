@@ -259,6 +259,16 @@ public:
 	 */
 	GFq_Polynomial get_0_Y() const;
 
+    /**
+     * Tells if a polynomial has only terms in X
+     */
+    bool is_in_X() const;
+    
+    /**
+     * Tells if a polynomial has only terms in Y
+     */
+    bool is_in_Y() const;
+    
 	/**
 	 * Applies to self the star function as P*(X,Y) = P(X,Y)/X^h where h is the greatest power of X so that X^h divides P
 	 * \return reference to the new polynomial
@@ -281,6 +291,7 @@ public:
 protected:
 
 	GFq_Polynomial get_v_0(bool x_terms) const;
+	bool is_in_v(bool x_terms) const;
 
 	/**
 	 * Helper method to create the map of monomials of the product of maps a and b
