@@ -73,6 +73,7 @@ public:
         print_seed(false),
         seed(0),
         has_seed(false),
+        print_sagemath(false),
         _indicator_int(0)
     {
         // http://theory.cs.uvic.ca/gen/poly.html
@@ -107,6 +108,7 @@ public:
     bool print_seed;
     unsigned int seed;
     bool has_seed;
+    bool print_sagemath; //!< Print input for Sage Math script
     int _indicator_int;
 private:
     std::vector<rssoft::gf::GF2_Polynomial> ppolys;
@@ -211,6 +213,7 @@ bool Options::get_options(int argc, char *argv[])
         {
             // these options set a flag
             {"print-seed", no_argument, &_indicator_int, 1},
+            {"sagemath", no_argument, &_indicator_int, 1},
             // these options do not set a flag
             {"snr", required_argument, 0, 'n'},        
             {"log2-n", required_argument, 0, 'm'},      
@@ -234,6 +237,10 @@ bool Options::get_options(int argc, char *argv[])
                 if (strcmp("print-seed", long_options[option_index].name) == 0)
                 {
                     print_seed = true;
+                }
+                if (strcmp("sagemath", long_options[option_index].name) == 0)
+                {
+                    print_sagemath = true;
                 }
                 _indicator_int = 0;
                 break;
@@ -487,6 +494,68 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+        }
+
+        if (options.print_sagemath)
+        {
+        	std::cout << "    dY=" << gskv.get_dY() << std::endl;
+        	std::cout << "    Cm=" << mat_M.cost() << std::endl;
+        	std::cout << "    k=" << options.k << std::endl;
+        	std::vector<rssoft::gf::GFq_Element> x_values;
+        	std::vector<rssoft::gf::GFq_Element> y_values;
+        	std::vector<unsigned int> multiplicities;
+
+        	rssoft::MultiplicityMatrix::traversing_iterator m_it(mat_M.begin());
+
+        	for (; m_it != mat_M.end(); ++m_it)
+        	{
+        		x_values.push_back(evaluation_values.get_x_values()[m_it.iX()]);
+        		y_values.push_back(evaluation_values.get_y_values()[m_it.iY()]);
+        		multiplicities.push_back(m_it.multiplicity());
+        	}
+
+        	std::vector<rssoft::gf::GFq_Element>::const_iterator gfe_it = x_values.begin();
+        	std::cout << "    x=[";
+
+        	for (; gfe_it != x_values.end(); ++gfe_it)
+        	{
+        		if (gfe_it != x_values.begin())
+        		{
+        			std::cout << ",";
+        		}
+
+        		std::cout << *gfe_it;
+        	}
+
+        	std::cout << "]" << std::endl;
+        	gfe_it = y_values.begin();
+        	std::cout << "    y=[";
+
+        	for (; gfe_it != y_values.end(); ++gfe_it)
+        	{
+        		if (gfe_it != y_values.begin())
+        		{
+        			std::cout << ",";
+        		}
+
+        		std::cout << *gfe_it;
+        	}
+
+        	std::cout << "]" << std::endl;
+        	std::vector<unsigned int>::const_iterator mul_it = multiplicities.begin();
+        	std::cout << "    m=[";
+
+        	for (; mul_it != multiplicities.end(); ++mul_it)
+        	{
+        		if (mul_it != multiplicities.begin())
+        		{
+        			std::cout << ",";
+        		}
+
+        		std::cout << *mul_it;
+        	}
+
+        	std::cout << "]" << std::endl;
         }
 
         return 0;

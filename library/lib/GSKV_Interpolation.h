@@ -73,6 +73,16 @@ public:
         verbosity = _verbosity;
     }
     
+    unsigned int get_dX() const
+    {
+    	return dX;
+    }
+
+    unsigned int get_dY() const
+    {
+    	return dY;
+    }
+
 	/**
 	 * Run the interpolation based on given multiplicity matrix
      * \return reference to the result polynomial
@@ -121,6 +131,8 @@ protected:
     unsigned int verbosity; //!< Verbose level, 0 to shut down any debug message
 
 	// parameters changing at each process run
+    unsigned int dX;
+    unsigned int dY;
 	std::vector<gf::GFq_BivariatePolynomial> G; //!< The G list of polynomials
 	std::vector<bool> calcG; //!< Li Chen's optimization. If true the corresponding polynomial in G is processed.
 	std::vector<unsigned int> lodG; //!< Leading orders of polynomials in G

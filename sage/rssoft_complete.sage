@@ -1,6 +1,22 @@
 import math
 
 
+# Node in the Roth-Ruckenstein's algorithm    
+class RR_Node:
+    def __init__(self,parent,coeff,Q):
+        self.id=t
+        self.Q=Q
+        self.ry_set=set()
+        if parent is not None:
+            self.parent=parent
+            self.coeff=coeff
+            self.deg=parent.deg+1
+        else:
+            self.parent=None
+            self.coeff=None
+            self.deg=-1
+
+
 # binomial coefficient (combination of k in n)
 def binomial(n,kk):
     return math.factorial(n)/(math.factorial(kk)*math.factorial(n-kk))
@@ -60,7 +76,17 @@ def print_apow(e):
         return "a^0"
     else:    
         return "a^%s" % e.log_repr()
+
         
+# print element as a symbol    
+def print_symbol(e):
+    if e == 0:
+        return "0"
+    elif e == 1:
+        return "1"
+    else:    
+        return "%s" % e.int_repr()
+
 
 # print polynomial with coefficiens as powers of alpha
 def print_apow_poly(P):
@@ -209,13 +235,90 @@ def final_G():
         print "  lod=%d" % lodG[ig]
         
     print "Minimal LOD polynomial g_%d,%d (ig_wdmin=%d)" % (it, ig_lodmin, ig_wdmin)   
-    print "Q=%s" % print_apow_poly(G[ig_lodmin])     
-            
+    print "Q=%s" % print_apow_poly(G[ig_lodmin])   
+    return G[ig_lodmin] 
+
+# -------------------
+# Roth-Ruckenstein            
+# -------------------
 
 # Run the GS iterative algorithm            
 def run_iterations():
     for ip in range(len(x)):
         process_point(ip)
+        
+# Divides bivariate polynomial by the greatest power of X that divides it
+def star(P):
+    return P/P.gcd(X^(P.degree(X)))
+    
+    
+# Finds the roots of P(0,Y) of a bivariate polynomial    
+def rootsy(P):
+    Py=Sy(P(X=0)) # cast to univariate polynomial in Y to find roots
+    return Py.roots()
+
+    
+# Run the Roth-Ruckenstein's algorithm    
+def rr_run(Q):
+    u = RR_Node(None,None,Q)
+    rr_dfs(u)
+    
+    
+# Roth-Ruckenstein's recursive node processing in deep first search strategy
+def rr_dfs(u):
+    global t
+
+    print "*** Node", u.id, u.deg, u.Q(Y=0) == 0, u.coeff
+    
+    Ry=rootsy(u.Q)
+    
+    for ry in Ry:
+        if ry not in u.ry_set: 
+            u.ry_set.add(ry)
+            Qv=star((u.Q)(Y=X*Y+ry[0]))
+            print "    ry =", ry[0], "Qv =", Qv
+            # Optimization: anticipate behaviour at child node
+            if Qv(Y=0) == 0: 
+                if u.deg < k-1:
+                    print "    -> trace back this route from node v:", u.coeff*X^u.deg+ry[0]*X^(u.deg+1)
+                    return u.coeff*X^u.deg+ry[0]*X^(u.deg+1) # trace back this route from node v
+                else:
+                    print "    -> trace back this route from node u:", u.coeff*X^u.deg
+                    return u.coeff*X^u.deg # trace back this route from node u
+            elif u.deg == k-1 and Qv(Y=0) != 0:
+                return None # cancel this route 
+            # construct child node
+            else: 
+                t += 1
+                print "    child", t
+                v = RR_Node(u,ry[0],Qv)
+                fpart_v = rr_dfs(v) # recursive call
+                # unroll child node
+                if u.deg == -1: # Root node collects results
+                    print "    we are at root node"
+                    if fpart_v is not None:
+                        F.append(fpart_v)
+                else:
+                    if fpart_v == None:
+                        print "    -> propagate invalid route"
+                        return None
+                    else:
+                        print "    -> return partial polynomial:", u.coeff*X^u.deg + fpart_v
+                        return u.coeff*X^u.deg + fpart_v
+                                
+
+# Display the resulting list of polynomials 
+def rr_final():
+    print "Done!"
+    for f in F:
+        print print_apow_poly(f)
+        fx=Sx(f(Y=0)) # cast to univariate polynomial in X
+        codestr=""
+        for x in x_values:
+            codestr += " "
+            codestr += print_symbol(fx(X=x))
+        print codestr
+        
 
         
 #=======================================================================================
@@ -225,14 +328,18 @@ def run_iterations():
 Fq.<a> = GF(2^3)
 R = PolynomialRing(Fq,2,'X,Y')
 X,Y = R.gens()
-
+Sy = PolynomialRing(Fq,'Y')
+Sx = PolynomialRing(Fq,'X')
 
 # example initialisation
 
+x_values=[1,a,a^2,a^3,a^4,a^5,a^6]
 lodG=[] # leading orders of polynomials in G
 calc=[] # skip calculation if false 
         # (complexity reduction - Li Chen's improvement on original GS algorithm)
 it=0 # Construction iteration
+t=0 # nodes but root node count
+F=[] # Result set of f(X) polynomials
 
 nb_example=2
 
@@ -258,11 +365,11 @@ elif nb_example == 1:
 else:
     # Ad hoc example
     dY=2
-    Cm=22
+    Cm=21
     k=5
-    x=[1,1,1,1,a^1,a^2,a^3,a^4,a^4,a^4,a^5,a^5,a^6,a^6]
-    y=[1,a^3,a^6,a^4,a^4,1,a^5,a^2,a^6,a^5,a^2,a^6,0,a^5]
-    m=[1,1,1,1,2,2,2,1,2,1,1,1,1,1]
+    x=[1,1,1,1,a^1,a^2,a^3,a^4,a^4,a^4,a^5,a^5,a^5,a^6,a^6]
+    y=[1,a^3,a^6,a^4,a^4,1,a^5,a^2,a^6,a^5,a^1,a^2,a^6,0,a^5]
+    m=[1,1,1,1,2,2,2,1,1,1,1,1,1,1,1]
 
     
 # execution
@@ -270,4 +377,7 @@ else:
 def run():
     init_G()
     run_iterations()
-    final_G()
+    Q=final_G()
+    rr_run(Q)
+    rr_final()
+    

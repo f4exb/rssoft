@@ -45,7 +45,9 @@ GSKV_Interpolation::GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k, cons
 		it_number(0),
 		Cm(0),
 		final_ig(0),
-        verbosity(0)
+        verbosity(0),
+        dX(0),
+        dY(0)
 {
 	if (k < 2)
 	{
@@ -61,8 +63,8 @@ GSKV_Interpolation::~GSKV_Interpolation()
 const gf::GFq_BivariatePolynomial& GSKV_Interpolation::run(const MultiplicityMatrix& mmat)
 {
 	std::pair<unsigned int, unsigned int> max_degrees = maximum_degrees(mmat);
-	unsigned int dX = max_degrees.first;
-	unsigned int dY = max_degrees.second;
+	dX = max_degrees.first;
+	dY = max_degrees.second;
 
     //DebugMsg(0,verbose) << "dX = ";
     //DebugStream() << "dX = " << "toto" << std::endl;
