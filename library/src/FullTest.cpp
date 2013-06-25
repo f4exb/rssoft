@@ -71,9 +71,11 @@ public:
         global_multiplicity(1<<3),
         verbosity(0),
         print_seed(false),
+        print_stats(false),
         seed(0),
         has_seed(false),
         print_sagemath(false),
+        iterations(1),
         _indicator_int(0)
     {
         // http://theory.cs.uvic.ca/gen/poly.html
@@ -106,9 +108,11 @@ public:
     unsigned int global_multiplicity;
     unsigned int verbosity;
     bool print_seed;
+    bool print_stats;
     unsigned int seed;
     bool has_seed;
     bool print_sagemath; //!< Print input for Sage Math script
+    unsigned int iterations; //!< Maximum number of retry iterations
     int _indicator_int;
 private:
     std::vector<rssoft::gf::GF2_Polynomial> ppolys;
@@ -118,7 +122,7 @@ private:
 class URandom
 {
 public:
-    URandom() 
+    URandom() : use_seed(false)
     {
         rf = fopen("/dev/urandom", "r");
     }
@@ -202,6 +206,55 @@ private:
 
 
 // ================================================================================================
+struct StatOutput
+{
+public:
+	StatOutput() :
+		codeword_average_score(0.0),
+		snr_dB(0.0),
+		nb_hard_errors(0),
+		nb_results_when_found(0),
+		result_order_when_found(0),
+		found(false),
+		nb_iterations(0),
+		nb_false_results(0),
+		max_multiplicity(0),
+		max_matrix_cost(0)
+	{}
+
+	friend std::ostream& operator<<(std::ostream& os, const StatOutput& polynomial);
+
+	float codeword_average_score;
+	float snr_dB;
+	unsigned int nb_hard_errors;
+	unsigned int nb_results_when_found;
+	unsigned int result_order_when_found;
+	bool found;
+	unsigned int nb_iterations;
+	unsigned int nb_false_results;
+	unsigned int max_multiplicity;
+	unsigned int max_matrix_cost;
+};
+
+
+// ================================================================================================
+std::ostream& operator<<(std::ostream& os, const StatOutput& st)
+{
+	os << st.snr_dB << ","
+		<< st.codeword_average_score << ","
+		<< st.nb_hard_errors << ","
+		<< st.found << ","
+		<< st.nb_results_when_found << ","
+		<< st.result_order_when_found << ","
+		<< st.nb_iterations << ","
+		<< st.nb_false_results << ","
+		<< st.max_multiplicity << ","
+		<< st.max_matrix_cost;
+	return os;
+}
+
+
+// ================================================================================================
 bool Options::get_options(int argc, char *argv[])
 {
     int c;
@@ -213,6 +266,7 @@ bool Options::get_options(int argc, char *argv[])
         {
             // these options set a flag
             {"print-seed", no_argument, &_indicator_int, 1},
+            {"print-stats", no_argument, &_indicator_int, 1},
             {"sagemath", no_argument, &_indicator_int, 1},
             // these options do not set a flag
             {"snr", required_argument, 0, 'n'},        
@@ -221,10 +275,11 @@ bool Options::get_options(int argc, char *argv[])
             {"global-multiplicity", required_argument, 0, 'M'},
             {"verbosity", required_argument, 0, 'v'},              
             {"seed", required_argument, 0, 's'},              
+            {"nb-iterations-max", required_argument, 0, 'i'},
         };    
         
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:m:k:M:v:s:", long_options, &option_index);
+        c = getopt_long (argc, argv, "n:m:k:M:v:s:i:", long_options, &option_index);
         
         if (c == -1) // end of options
         {
@@ -237,6 +292,10 @@ bool Options::get_options(int argc, char *argv[])
                 if (strcmp("print-seed", long_options[option_index].name) == 0)
                 {
                     print_seed = true;
+                }
+                if (strcmp("print-stats", long_options[option_index].name) == 0)
+                {
+                    print_stats = true;
                 }
                 if (strcmp("sagemath", long_options[option_index].name) == 0)
                 {
@@ -263,6 +322,9 @@ bool Options::get_options(int argc, char *argv[])
             case 's':
                 status = extract_option<int, unsigned int>(seed, 's');
                 has_seed = true;
+                break;
+            case 'i':
+                status = extract_option<int, unsigned int>(iterations, 'i');
                 break;
             case '?':
                 status = false;
@@ -313,6 +375,7 @@ int main(int argc, char *argv[])
         unsigned int q = (1<<options.m);
         unsigned int n = q - 1;
         double std_dev  = 1.0 / pow(10.0, (options.snr_dB/10.0)); // Standard deviation for power AWGN
+        StatOutput stat_output;
 
         rssoft::gf::GFq gfq(options.m, options.get_ppoly());
         
@@ -325,7 +388,9 @@ int main(int argc, char *argv[])
         
         if (options.print_seed)
         {
-            std::cout << "Seed = " << ur.rand_uword() << std::endl;
+            unsigned int seed = ur.rand_uword();
+            std::cout << "Seed = " << seed << std::endl;
+            ur.set_seed(seed);
         }
         
         std::vector<rssoft::gf::GFq_Symbol> message;
@@ -433,129 +498,164 @@ int main(int argc, char *argv[])
         	codeword_score += score;
         }
 
+        stat_output.snr_dB = options.snr_dB;
+        stat_output.codeword_average_score = codeword_score / n;
+        stat_output.nb_hard_errors = hard_decision_errors;
+
         std::cout << "Codeword score: " << codeword_score / n << " dB/symbol (best = " << best_score << ", worst = " << worst_score << ")" << std::endl;
+        bool found = false;
+        unsigned int global_multiplicity = options.global_multiplicity;
 
-        rssoft::MultiplicityMatrix mat_M(mat_Pi, options.global_multiplicity);
-
-        if (options.verbosity > 0)
+        for (unsigned int ni=1; (ni<=options.iterations) && (!found); ni++)
         {
-        	std::cout << "Multiplicity matrix:" << std::endl;
-        	std::cout << mat_M;
-        	std::cout << std::endl;
-        }
-
-        std::cout << "Multiplicity matrix cost is " << mat_M.cost() << std::endl;
-
-        rssoft::GSKV_Interpolation gskv(gfq, options.k, evaluation_values);
-        rssoft::RR_Factorization rr(gfq, options.k);
-        gskv.set_verbosity(options.verbosity);
-        rr.set_verbosity(options.verbosity);
-
-        std::cout << std::endl;
-        const rssoft::gf::GFq_BivariatePolynomial& Q = gskv.run(mat_M);
-        std::cout << "Q(X,Y) = " << Q << std::endl;
         
-        if (Q.is_in_X())
+			rssoft::MultiplicityMatrix mat_M(mat_Pi, global_multiplicity);
+
+			if (options.verbosity > 0)
+			{
+				std::cout << "Multiplicity matrix:" << std::endl;
+				std::cout << mat_M;
+				std::cout << std::endl;
+			}
+
+			unsigned int mm_cost = mat_M.cost();
+			std::cout << "Multiplicity matrix cost is " << mm_cost << std::endl;
+
+			rssoft::GSKV_Interpolation gskv(gfq, options.k, evaluation_values);
+			rssoft::RR_Factorization rr(gfq, options.k);
+			gskv.set_verbosity(options.verbosity);
+			rr.set_verbosity(options.verbosity);
+
+			std::cout << std::endl;
+			const rssoft::gf::GFq_BivariatePolynomial& Q = gskv.run(mat_M);
+			std::cout << "Q(X,Y) = " << Q << std::endl;
+
+			if (Q.is_in_X())
+			{
+				std::cout << "Interpolation polynomial is in X only and is not factorizable. Hence no solutions" << std::endl;
+			}
+			else
+			{
+				std::vector<rssoft::gf::GFq_Polynomial>& res_polys = rr.run(Q);
+
+				std::cout << res_polys.size() << " result(s)" << std::endl;
+
+				if (res_polys.size() > 0)
+				{
+					std::vector<rssoft::gf::GFq_Polynomial>::iterator respoly_it = res_polys.begin();
+					unsigned int i=0;
+					for (; respoly_it != res_polys.end(); ++respoly_it, i++)
+					{
+						respoly_it->set_alpha_format(true);
+						std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
+					}
+
+					rssoft::FinalEvaluation final_evaluation(gfq, options.k, evaluation_values);
+					final_evaluation.run(res_polys, mat_Pi);
+					std::cout << "Codewords:" << std::endl;
+					final_evaluation.print_codewords(std::cout, final_evaluation.get_codewords());
+					std::cout << "Messages:" << std::endl;
+					const std::vector<rssoft::ProbabilityCodeword>& messages = final_evaluation.get_messages();
+					final_evaluation.print_codewords(std::cout, messages);
+
+					std::vector<rssoft::ProbabilityCodeword>::const_iterator ms_it = messages.begin();
+					unsigned int i_m = 0;
+
+					for (; ms_it != messages.end(); ++ms_it, i_m++)
+					{
+						if (rssoft::gf::compare_symbol_vectors(ms_it->get_codeword(), message))
+						{
+							std::cout << "#" << i_m << " found at iteration #" << ni << " !!!" << std::endl;
+							stat_output.found = true;
+							stat_output.nb_results_when_found = res_polys.size();
+							stat_output.result_order_when_found = i_m;
+							stat_output.max_matrix_cost = mm_cost;
+							stat_output.max_multiplicity = global_multiplicity;
+							found = true;
+						}
+						else
+						{
+							stat_output.nb_false_results++;
+						}
+					}
+				}
+			}
+
+			if (options.print_sagemath)
+			{
+				std::cout << "    dY=" << gskv.get_dY() << std::endl;
+				std::cout << "    Cm=" << mat_M.cost() << std::endl;
+				std::cout << "    k=" << options.k << std::endl;
+				std::vector<rssoft::gf::GFq_Element> x_values;
+				std::vector<rssoft::gf::GFq_Element> y_values;
+				std::vector<unsigned int> multiplicities;
+
+				rssoft::MultiplicityMatrix::traversing_iterator m_it(mat_M.begin());
+
+				for (; m_it != mat_M.end(); ++m_it)
+				{
+					x_values.push_back(evaluation_values.get_x_values()[m_it.iX()]);
+					y_values.push_back(evaluation_values.get_y_values()[m_it.iY()]);
+					multiplicities.push_back(m_it.multiplicity());
+				}
+
+				std::vector<rssoft::gf::GFq_Element>::const_iterator gfe_it = x_values.begin();
+				std::cout << "    x=[";
+
+				for (; gfe_it != x_values.end(); ++gfe_it)
+				{
+					if (gfe_it != x_values.begin())
+					{
+						std::cout << ",";
+					}
+
+					std::cout << *gfe_it;
+				}
+
+				std::cout << "]" << std::endl;
+				gfe_it = y_values.begin();
+				std::cout << "    y=[";
+
+				for (; gfe_it != y_values.end(); ++gfe_it)
+				{
+					if (gfe_it != y_values.begin())
+					{
+						std::cout << ",";
+					}
+
+					std::cout << *gfe_it;
+				}
+
+				std::cout << "]" << std::endl;
+				std::vector<unsigned int>::const_iterator mul_it = multiplicities.begin();
+				std::cout << "    m=[";
+
+				for (; mul_it != multiplicities.end(); ++mul_it)
+				{
+					if (mul_it != multiplicities.begin())
+					{
+						std::cout << ",";
+					}
+
+					std::cout << *mul_it;
+				}
+
+				std::cout << "]" << std::endl;
+			}
+
+			if (!found)
+			{
+				stat_output.max_matrix_cost = mm_cost;
+				stat_output.max_multiplicity = global_multiplicity;
+			}
+
+			global_multiplicity = mm_cost;
+			stat_output.nb_iterations = ni;
+        } // retry iterations
+
+        if (options.print_stats)
         {
-            std::cout << "Interpolation polynomial is in X only and is not factorizable. Hence no solutions" << std::endl;
-        }   
-        else
-        {
-            std::vector<rssoft::gf::GFq_Polynomial>& res_polys = rr.run(Q);
-
-            std::cout << res_polys.size() << " result(s)" << std::endl;
-
-            if (res_polys.size() > 0)
-            {
-                std::vector<rssoft::gf::GFq_Polynomial>::iterator respoly_it = res_polys.begin();
-                unsigned int i=0;
-                for (; respoly_it != res_polys.end(); ++respoly_it, i++)
-                {
-                    respoly_it->set_alpha_format(true);
-                    std::cout << "F" << i << "(X) = " << *respoly_it << std::endl;
-                }
-
-                rssoft::FinalEvaluation final_evaluation(gfq, options.k, evaluation_values);
-                final_evaluation.run(res_polys, mat_Pi);
-                std::cout << "Codewords:" << std::endl;
-                final_evaluation.print_codewords(std::cout, final_evaluation.get_codewords());
-                std::cout << "Messages:" << std::endl;
-                const std::vector<rssoft::ProbabilityCodeword>& messages = final_evaluation.get_messages();
-                final_evaluation.print_codewords(std::cout, messages);
-
-                std::vector<rssoft::ProbabilityCodeword>::const_iterator ms_it = messages.begin();
-                unsigned int i_m = 0;
-
-                for (; ms_it != messages.end(); ++ms_it, i_m++)
-                {
-                    if (rssoft::gf::compare_symbol_vectors(ms_it->get_codeword(), message))
-                    {
-                        std::cout << "#" << i_m << " found!!!" << std::endl;
-                    }
-                }
-            }
-        }
-
-        if (options.print_sagemath)
-        {
-        	std::cout << "    dY=" << gskv.get_dY() << std::endl;
-        	std::cout << "    Cm=" << mat_M.cost() << std::endl;
-        	std::cout << "    k=" << options.k << std::endl;
-        	std::vector<rssoft::gf::GFq_Element> x_values;
-        	std::vector<rssoft::gf::GFq_Element> y_values;
-        	std::vector<unsigned int> multiplicities;
-
-        	rssoft::MultiplicityMatrix::traversing_iterator m_it(mat_M.begin());
-
-        	for (; m_it != mat_M.end(); ++m_it)
-        	{
-        		x_values.push_back(evaluation_values.get_x_values()[m_it.iX()]);
-        		y_values.push_back(evaluation_values.get_y_values()[m_it.iY()]);
-        		multiplicities.push_back(m_it.multiplicity());
-        	}
-
-        	std::vector<rssoft::gf::GFq_Element>::const_iterator gfe_it = x_values.begin();
-        	std::cout << "    x=[";
-
-        	for (; gfe_it != x_values.end(); ++gfe_it)
-        	{
-        		if (gfe_it != x_values.begin())
-        		{
-        			std::cout << ",";
-        		}
-
-        		std::cout << *gfe_it;
-        	}
-
-        	std::cout << "]" << std::endl;
-        	gfe_it = y_values.begin();
-        	std::cout << "    y=[";
-
-        	for (; gfe_it != y_values.end(); ++gfe_it)
-        	{
-        		if (gfe_it != y_values.begin())
-        		{
-        			std::cout << ",";
-        		}
-
-        		std::cout << *gfe_it;
-        	}
-
-        	std::cout << "]" << std::endl;
-        	std::vector<unsigned int>::const_iterator mul_it = multiplicities.begin();
-        	std::cout << "    m=[";
-
-        	for (; mul_it != multiplicities.end(); ++mul_it)
-        	{
-        		if (mul_it != multiplicities.begin())
-        		{
-        			std::cout << ",";
-        		}
-
-        		std::cout << *mul_it;
-        	}
-
-        	std::cout << "]" << std::endl;
+        	std::cout << "#RES: " << stat_output << std::endl;
         }
 
         return 0;

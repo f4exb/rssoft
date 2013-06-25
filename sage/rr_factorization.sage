@@ -119,7 +119,7 @@ Sy = PolynomialRing(Fq,'Y')
 t=0 # nodes but root node count
 F=[] # Result set of f(X) polynomials
 
-nb_example=2;
+nb_example=3;
 
 if nb_example == 0:
     # Li Chen's example:
@@ -129,11 +129,15 @@ elif nb_example == 1:
     # Gross and al's example
     k=5 # k as in RS(n,k)
     Q=a^2*X^5*Y+a^2*X^9+a^4*Y^2+a^5*X^4*Y+a^4*X^8+a^4*X^3*Y+X^7+a^3*X^6+a^3*X*Y+a^4*X^5+a^4*Y+a^3*X^4+a^5*X^3+a^2*X^2+a^2*X+a 
-else:
+elif nb_example == 2:
     # Gross and al's example - calculated by previous interpolation
     k=5 # k as in RS(n,k)
     P=a^2*X^5*Y+a^2*X^9+a^4*Y^2+a^5*X^4*Y+a^4*X^8+a^4*X^3*Y+X^7+a^3*X^6+a^3*X*Y+a^4*X^5+a^4*Y+a^3*X^4+a^5*X^3+a^2*X^2+a^2*X+a 
     Q=P/a
+else:
+    # Ad-hoc
+    k=5 # k as in RS(n,k)
+    Q=a^2 + a^2*X + a^1*X^3 + a^1*X^4 + a^5*Y + a^4*X^5 + a^2*X*Y + a^5*X^6 + a^6*X^2*Y + a^6*X^8 + X^4*Y + a^5*Y^2
 
     
 # execution

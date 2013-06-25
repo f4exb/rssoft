@@ -47,7 +47,8 @@ GSKV_Interpolation::GSKV_Interpolation(const gf::GFq& _gf, unsigned int _k, cons
 		final_ig(0),
         verbosity(0),
         dX(0),
-        dY(0)
+        dY(0),
+        mcost(0)
 {
 	if (k < 2)
 	{
@@ -65,6 +66,7 @@ const gf::GFq_BivariatePolynomial& GSKV_Interpolation::run(const MultiplicityMat
 	std::pair<unsigned int, unsigned int> max_degrees = maximum_degrees(mmat);
 	dX = max_degrees.first;
 	dY = max_degrees.second;
+	mcost = mmat.cost();
 
     //DebugMsg(0,verbose) << "dX = ";
     //DebugStream() << "dX = " << "toto" << std::endl;
@@ -203,64 +205,65 @@ void GSKV_Interpolation::process_hasse(const gf::GFq_Element& x, const gf::GFq_E
         }
     }
 
+    DEBUG_OUT(verbosity > 1, "Minimal LOD polynomial G_" << it_number << "[" << ig_lodmin << "]" << std::endl);
+
     if (zero_Hasse)
     {
         DEBUG_OUT(verbosity > 1, "All Hasse derivatives are 0 so G_" << it_number+1 << " = G_" << it_number << std::endl);
     }
     else
     {
-        DEBUG_OUT(verbosity > 1, "Minimal LOD polynomial G_" << it_number << "[" << ig_lodmin << "]" << std::endl);
+        // compute next values in G
+    	it_g = G.begin();
+		ig = 0;
+
+		for (; it_g != G.end(); ++it_g, ig++)
+		{
+			if (calcG[ig]) // Polynomial is part of calculation as per Li Chen's optimization
+			{
+				if (hasse_xy_G[ig].is_zero())
+				{
+					G_next.push_back(*it_g); // carry over the same polynomial
+					lodG_next.push_back(lodG[ig]);
+				}
+				else
+				{
+					if (ig == ig_lodmin) // Polynomial with minimal leading order
+					{
+						gf::GFq_BivariatePolynomial X1(1,k-1);
+						X1.init_x_pow(gf,1); // X1(X,Y) = X
+						G_next.push_back(hasse_xy_G[ig]*(*it_g)*(X1-x));
+						unsigned int mX = it_g->lmX(); // leading monomial's X power
+						unsigned int mY = it_g->lmY(); // leading monomial's Y power
+						lodG_next.push_back(lodG[ig_lodmin]+(mX/(k-1))+1+mY); // new leading order by sliding one position of X powers to the right
+					}
+					else // other polynomials
+					{
+						G_next.push_back(hasse_xy_G[ig]*G[ig_lodmin]-hasse_xy_G[ig_lodmin]*(*it_g));
+						lodG_next.push_back(std::max(lodG[ig],lodG[ig_lodmin]));   // new leading order is the max of the two
+					}
+				}
+
+				if (lodG_next.back() > Cm)
+				{
+					calcG[ig] = false; // Li Chen's complexity reduction, skip polynomial processing if its lod is too big (bigger than multiplicity cost)
+				}
+			}
+			else // Polynomial is skipped for calculation due to Li Chen's optimization
+			{
+				G_next.push_back(*it_g); // carry over the same polynomial
+				lodG_next.push_back(lodG[ig]);
+			}
+		}
+
+		// store next values if matrix cost is not reached
+		if (it_number < mcost)
+		G.assign(G_next.begin(), G_next.end());
+		lodG.assign(lodG_next.begin(), lodG_next.end());
+		it_number++;
     }
     
-    // compute next values in G
-    
-    it_g = G.begin();
-    ig = 0;
-    
-    for (; it_g != G.end(); ++it_g, ig++)
-    {
-        if (calcG[ig]) // Polynomial is part of calculation as per Li Chen's optimization
-        {
-            if (hasse_xy_G[ig].is_zero())
-            {
-                G_next.push_back(*it_g); // carry over the same polynomial 
-                lodG_next.push_back(lodG[ig]);
-            }
-            else
-            {
-                if (ig == ig_lodmin) // Polynomial with minimal leading order
-                {
-                    gf::GFq_BivariatePolynomial X1(1,k-1);
-                    X1.init_x_pow(gf,1); // X1(X,Y) = X
-                    G_next.push_back(hasse_xy_G[ig]*(*it_g)*(X1+x));
-                    unsigned int mX = it_g->lmX(); // leading monomial's X power
-                    unsigned int mY = it_g->lmY(); // leading monomial's Y power
-                    lodG_next.push_back(lodG[ig_lodmin]+(mX/(k-1))+1+mY); // new leading order by sliding one position of X powers to the right
-                }
-                else // other polynomials
-                {
-                    G_next.push_back(hasse_xy_G[ig]*G[ig_lodmin]-hasse_xy_G[ig_lodmin]*(*it_g));
-                    lodG_next.push_back(std::max(lodG[ig],lodG[ig_lodmin]));   // new leading order is the max of the two
-                }
-            }
-            
-            if (lodG_next.back() > Cm)
-            {
-                calcG[ig] = false; // Li Chen's complexity reduction, skip polynomial processing if its lod is too big (bigger than multiplicity cost)
-            }
-        }
-        else // Polynomial is skipped for calculation due to Li Chen's optimization
-        {
-            G_next.push_back(*it_g); // carry over the same polynomial 
-            lodG_next.push_back(lodG[ig]);
-        }
-    }
-    
-    // store next values
-    G.assign(G_next.begin(), G_next.end());
-    lodG.assign(lodG_next.begin(), lodG_next.end());
-    it_number++;
-DEBUG_OUT(verbosity > 1, std::endl);
+	DEBUG_OUT(verbosity > 1, std::endl);
 }
 
 // ================================================================================================

@@ -133,6 +133,7 @@ protected:
 	// parameters changing at each process run
     unsigned int dX;
     unsigned int dY;
+    unsigned int mcost; //!< Multiplicity matrix cost
 	std::vector<gf::GFq_BivariatePolynomial> G; //!< The G list of polynomials
 	std::vector<bool> calcG; //!< Li Chen's optimization. If true the corresponding polynomial in G is processed.
 	std::vector<unsigned int> lodG; //!< Leading orders of polynomials in G
