@@ -17,7 +17,8 @@
  along with this program; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Boston, MA  02110-1301  USA
 
- Reliability Matrix class
+ Reliability Matrix class. 
+ Analog data is entered first then the normalization method is called to get the actual reliability data (probabilities).
 
  */
 
@@ -29,6 +30,9 @@
 namespace rssoft
 {
 
+/**
+ * \brief Reliability Matrix class. Analog data is entered first then the normalization method is called to get the actual reliability data (probabilities).
+ */
 class ReliabilityMatrix
 {
 public:
@@ -61,6 +65,16 @@ public:
 	 * \param symbol_data Pointer to symbol data array. There must be nb_symbol values corresponding to the relative reliability of each symbol for the current symbol position in the message
 	 */
 	void enter_symbol_data(unsigned int message_symbol_index, float *symbol_data);
+    
+    /**
+     * Enter an erasure at current symbol position. This is done by zeroing out the corresponding column in the matrix thus neutralizing it for further multiplicity calculation.
+     */
+    void enter_erasure();
+
+    /**
+     * Enter an erasure at a given symbol position. This is done by zeroing out the corresponding column in the matrix thus neutralizing it for further multiplicity calculation.
+     */
+    void enter_erasure(unsigned int message_symbol_index);
 
 	/**
 	 * Normalize each column so that values represent an a posteriori probability i.e. sum of each column is 1.0

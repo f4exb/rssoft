@@ -26,6 +26,7 @@
 
 #include "GFq.h"
 #include "GFq_Element.h"
+#include <set>
 
 namespace rssoft
 {
@@ -56,6 +57,7 @@ unsigned int binomial_coeff(unsigned int n, unsigned int k);
 void print_symbols_vector(std::ostream& os, const std::vector<GFq_Symbol>& v);
 void print_elements_vector(std::ostream& os, const std::vector<GFq_Element>& v);
 bool compare_symbol_vectors(const std::vector<GFq_Symbol>& v1, const std::vector<GFq_Symbol>& v2);
+void print_symbols_and_erasures(std::ostream& os, const std::vector<GFq_Symbol>& v, std::set<unsigned int>& erasure_indexes);
 
 } // namespace gf
 } // namespace rssoft

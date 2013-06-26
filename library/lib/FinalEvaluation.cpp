@@ -111,6 +111,7 @@ void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, co
             codewords.push_back(tmp_pc);
             messages.push_back(tmp_pc);
             float proba_score = 0.0; // We will use log scale in dB/symbol
+            unsigned int proba_count = 0; // number of individual symbol probabilities considered
             std::vector<gf::GFq_Element>::const_iterator evalpt_it = evaluation_values.get_evaluation_points().begin();
             unsigned int i_pt = 0;
             
@@ -119,12 +120,18 @@ void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, co
                 gf::GFq_Element eval = (*poly_it)(*evalpt_it); // Evaluate polynomial at current point
                 codewords.back().get_codeword().push_back(eval.poly()); // Store the corresponding symbol in the codeword
                 unsigned int& i_s = symbol_index.at(eval); // Retrieve symbol index in reliability matrix row order
-                proba_score += 10.0 * log10(relmat(i_s, i_pt)); // Accumulate probability (dB)
+                float p_ij = relmat(i_s, i_pt);
+
+                if (p_ij != 0.0) // symbol was not erased
+                {
+                	proba_score += 10.0 * log10(p_ij); // Accumulate probability (dB)
+                	proba_count++;
+                }
             }
             
             // Probability score in dB is divided by the number of evaluation points used. This is an attempt to get a common metric among codes of different lengths
-            codewords.back().get_probability_score() = proba_score/evaluation_values.get_evaluation_points().size(); // Store the probability score in the probability score weighted codeword
-            messages.back().get_probability_score() = proba_score/evaluation_values.get_evaluation_points().size(); // Store the message with probability score.
+            codewords.back().get_probability_score() = proba_score/proba_count; // Store the probability score in the probability score weighted codeword
+            messages.back().get_probability_score() = proba_score/proba_count; // Store the message with probability score.
             poly_it->get_poly_symbols(messages.back().get_codeword(), k); // Message is polynomial's coefficients
         }
     }

@@ -80,6 +80,32 @@ void ReliabilityMatrix::enter_symbol_data(unsigned int message_symbol_index, flo
 }
 
 // ================================================================================================
+void ReliabilityMatrix::enter_erasure()
+{
+	if (_message_symbol_count < _message_length)
+	{
+        for (unsigned int i=0; i<_nb_symbols; i++)
+        {
+            _matrix[_message_symbol_count*_nb_symbols + i] = 0.0;
+        }
+        
+        _message_symbol_count++;
+    }    
+}
+
+// ================================================================================================
+void ReliabilityMatrix::enter_erasure(unsigned int message_symbol_index)
+{
+	if (message_symbol_index < _message_length)
+	{
+        for (unsigned int i=0; i<_nb_symbols; i++)
+        {
+            _matrix[message_symbol_index*_nb_symbols + i] = 0.0;
+        }
+    }
+}
+
+// ================================================================================================
 void ReliabilityMatrix::normalize()
 {
 	float col_sum = 0;
@@ -99,7 +125,10 @@ void ReliabilityMatrix::normalize()
 
 			if (ic > 0)
 			{
-				_matrix[(ic-1)*_nb_symbols + ir] /= last_col_sum;
+                if (last_col_sum != 0.0)
+                {
+                    _matrix[(ic-1)*_nb_symbols + ir] /= last_col_sum;
+                }
 			}
 		}
 	}

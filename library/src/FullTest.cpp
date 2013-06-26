@@ -32,6 +32,7 @@
 #include "RR_Factorization.h"
 #include "FinalEvaluation.h"
 #include "RS_Encoding.h"
+#include "URandom.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -76,6 +77,7 @@ public:
         has_seed(false),
         print_sagemath(false),
         iterations(1),
+        nb_erasures(0),
         _indicator_int(0)
     {
         // http://theory.cs.uvic.ca/gen/poly.html
@@ -113,97 +115,11 @@ public:
     bool has_seed;
     bool print_sagemath; //!< Print input for Sage Math script
     unsigned int iterations; //!< Maximum number of retry iterations
+    unsigned int nb_erasures; //!< Number of erasures
     int _indicator_int;
 private:
     std::vector<rssoft::gf::GF2_Polynomial> ppolys;
 };
-
-// ================================================================================================
-class URandom
-{
-public:
-    URandom() : use_seed(false)
-    {
-        rf = fopen("/dev/urandom", "r");
-    }
-    
-    ~URandom() 
-    {
-        fclose(rf);
-    }
-    
-    int rand_word() 
-    {
-        int ri; 
-        
-        if (use_seed)
-        {
-            ri = (rand()/2) - RAND_MAX;
-        }
-        else
-        {
-            unsigned int bytes_read = fread((char*)(&ri),sizeof(ri),1,rf);
-        }
-        
-        return ri & 0x7fffffff;
-    }
-    
-    unsigned int rand_uword() 
-    {
-        unsigned int ri; 
-        
-        if (use_seed)
-        {
-            ri = rand();
-        }
-        else
-        {
-            unsigned int bytes_read = fread((char*)(&ri),sizeof(ri),1,rf);
-        }
-        
-        return ri & 0x7fffffff;
-    }
-    
-    double rand_uniform() // GENERATE UNIFORMLY FROM [0,1)
-    {
-        return (double)rand_word() / (1.0+(double)0x7fffffff);
-    }
-    
-    double rand_uniopen() // GENERATE UNIFORMLY FORM (0,1)
-    {
-        return (0.5+(double)rand_word()) / (1.0+(double)0x7fffffff);
-    }
-    
-    unsigned int rand_int(unsigned int n) // GENERATE RANDOM INTEGER FROM 0, 1, ..., (n-1)
-    { 
-      return (unsigned int) (n * rand_uniform());
-    }    
-    
-    double rand_gaussian() // GAUSSIAN GENERATOR.  Done by using the Box-Muller method
-    {
-        double a, b;
-        a = rand_uniform();
-        b = rand_uniopen();
-        return cos(2.0*M_PI*a) * sqrt(-2.0*log(b));
-    }
-    
-    void set_seed(unsigned int seed)
-    {
-        std::cout << "use seed: " << seed << std::endl;
-        srand(seed);
-        use_seed = true;
-    }
-    
-    void unset_seed()
-    {
-        use_seed = false;
-    }
-    
-private:
-    FILE *rf;
-    bool use_seed;
-};
-
 
 // ================================================================================================
 struct StatOutput
@@ -276,10 +192,11 @@ bool Options::get_options(int argc, char *argv[])
             {"verbosity", required_argument, 0, 'v'},              
             {"seed", required_argument, 0, 's'},              
             {"nb-iterations-max", required_argument, 0, 'i'},
+            {"nb-erasures", required_argument, 0, 'e'},
         };    
         
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:m:k:M:v:s:i:", long_options, &option_index);
+        c = getopt_long (argc, argv, "n:m:k:M:v:s:i:e:", long_options, &option_index);
         
         if (c == -1) // end of options
         {
@@ -326,6 +243,9 @@ bool Options::get_options(int argc, char *argv[])
             case 'i':
                 status = extract_option<int, unsigned int>(iterations, 'i');
                 break;
+            case 'e':
+                status = extract_option<int, unsigned int>(nb_erasures, 'e');
+                break;
             case '?':
                 status = false;
                 break;
@@ -359,6 +279,11 @@ bool Options::get_options(int argc, char *argv[])
         	std::cout << "Global multiplicity must be at least " << n << std::endl;
         	status = false;
         }
+        
+        if (nb_erasures > n-2)
+        {
+            std::cout << "The number of erasures (" << nb_erasures << ") cannot exceed the number of symbols - 2 (" << n-2 << ")" << std::endl;
+        }
     }
     
     return status;
@@ -376,6 +301,7 @@ int main(int argc, char *argv[])
         unsigned int n = q - 1;
         double std_dev  = 1.0 / pow(10.0, (options.snr_dB/10.0)); // Standard deviation for power AWGN
         StatOutput stat_output;
+        std::set<unsigned int> erased_indexes;
 
         rssoft::gf::GFq gfq(options.m, options.get_ppoly());
         
@@ -413,7 +339,21 @@ int main(int argc, char *argv[])
         std::cout << "Codeword: (n=" << codeword.size() << ") ";
         rssoft::gf::print_symbols_vector(std::cout, codeword);
         std::cout << std::endl;
+
+        // Prepare set of erased symbol indexes:
         
+        std::set<unsigned int>::iterator s_it;
+        
+        while (erased_indexes.size() < options.nb_erasures)
+        {
+            unsigned int i_s = ur.rand_int(n);
+            erased_indexes.insert(i_s);
+        }
+        
+        std::cout << "Erasures: (n=" << codeword.size() << ") ";
+        rssoft::gf::print_symbols_and_erasures(std::cout, codeword, erased_indexes);
+        std::cout << std::endl;
+
         // Simulate reception behind noisy channel. Reliability matrix is created with noisy power samples.
 
         rssoft::ReliabilityMatrix mat_Pi(options.m,n);
@@ -426,42 +366,51 @@ int main(int argc, char *argv[])
         	float max_pwr = 0;
         	unsigned int r_max = 0;
 
-        	for (unsigned int r=0; r<q; r++)
-        	{
-        		if (evaluation_values.get_y_values()[r] == codeword[c]) // evaluation point
-        		{
-        			row_indexes.push_back(r);
-        			mat_Pi_col[r] = 1.0 + (options.make_noise ? std_dev * ur.rand_gaussian() : 0.0);
-        			mat_Pi_col[r] *= mat_Pi_col[r];
-        		}
-        		else
-        		{
-        			mat_Pi_col[r] = 0.0 + (options.make_noise ? std_dev * ur.rand_gaussian() : 0.0);
-        			mat_Pi_col[r] *= mat_Pi_col[r];
-        		}
+            if (erased_indexes.find(c) == erased_indexes.end()) // symbol not erased
+            {
+                for (unsigned int r=0; r<q; r++)
+                {
+                    if (evaluation_values.get_y_values()[r] == codeword[c]) // evaluation point
+                    {
+                        row_indexes.push_back(r);
+                        mat_Pi_col[r] = 1.0 + (options.make_noise ? std_dev * ur.rand_gaussian() : 0.0);
+                        mat_Pi_col[r] *= mat_Pi_col[r];
+                    }
+                    else
+                    {
+                        mat_Pi_col[r] = 0.0 + (options.make_noise ? std_dev * ur.rand_gaussian() : 0.0);
+                        mat_Pi_col[r] *= mat_Pi_col[r];
+                    }
 
-        		if (mat_Pi_col[r] > max_pwr)
-        		{
-        			max_pwr = mat_Pi_col[r];
-        			r_max = r;
-        		}
-        	}
+                    if (mat_Pi_col[r] > max_pwr)
+                    {
+                        max_pwr = mat_Pi_col[r];
+                        r_max = r;
+                    }
+                }
 
-        	mat_Pi.enter_symbol_data(mat_Pi_col);
-        	hard_decision.push_back(evaluation_values.get_y_values()[r_max].poly());
+                mat_Pi.enter_symbol_data(mat_Pi_col);
+                hard_decision.push_back(evaluation_values.get_y_values()[r_max].poly());
 
-        	if (hard_decision.back() != codeword[c])
-        	{
-        		hard_decision_errors++;
-        	}
+                if (hard_decision.back() != codeword[c])
+                {
+                    hard_decision_errors++;
+                }
+            }
+            else // erased symbol
+            {
+                mat_Pi.enter_erasure();
+                row_indexes.push_back(0);
+                hard_decision.push_back(0);
+            }
         }
 
         delete[] mat_Pi_col;
 
         std::cout << "Hard-dec: (n=" << codeword.size() << ") ";
-        rssoft::gf::print_symbols_vector(std::cout, hard_decision);
+        rssoft::gf::print_symbols_and_erasures(std::cout, hard_decision, erased_indexes);
         std::cout << std::endl;
-        std::cout << " -> " << hard_decision_errors << " errors, " << (hard_decision_errors > (n-options.k)/2 ? "uncorrectable" : "correctable") << std::endl;
+        std::cout << " -> " << hard_decision_errors << " errors, " << options.nb_erasures << " erasures: " << ((2*hard_decision_errors)+options.nb_erasures < (n-options.k) ? "correctable" : "uncorrectable") << std::endl;
 
         if (options.verbosity > 0)
         {
@@ -472,37 +421,44 @@ int main(int argc, char *argv[])
 
         mat_Pi.normalize();
         float codeword_score = 0.0;
+        unsigned int codeword_count = 0;
         float best_score, worst_score;
+        bool first_round = true;
 
         for (unsigned int c=0; c<n; c++)
         {
-        	float score = 10.0 * log10(mat_Pi(row_indexes[c],c));
+            if (erased_indexes.find(c) == erased_indexes.end()) // symbol not erased
+            {
+                float score = 10.0 * log10(mat_Pi(row_indexes[c],c));
 
-        	if (c == 0)
-        	{
-        		best_score = score;
-        		worst_score = score;
-        	}
-        	else
-        	{
-        		if (score > best_score)
-        		{
-        			best_score = score;
-        		}
-        		if (score < worst_score)
-        		{
-        			worst_score = score;
-        		}
-        	}
+                if (first_round)
+                {
+                    best_score = score;
+                    worst_score = score;
+                    first_round = false;
+                }
+                else
+                {
+                    if (score > best_score)
+                    {
+                        best_score = score;
+                    }
+                    if (score < worst_score)
+                    {
+                        worst_score = score;
+                    }
+                }
 
-        	codeword_score += score;
+                codeword_score += score;
+                codeword_count++;
+            }
         }
 
         stat_output.snr_dB = options.snr_dB;
-        stat_output.codeword_average_score = codeword_score / n;
+        stat_output.codeword_average_score = codeword_score / codeword_count;
         stat_output.nb_hard_errors = hard_decision_errors;
 
-        std::cout << "Codeword score: " << codeword_score / n << " dB/symbol (best = " << best_score << ", worst = " << worst_score << ")" << std::endl;
+        std::cout << "Codeword score: " << codeword_score / codeword_count << " dB/symbol (best = " << best_score << ", worst = " << worst_score << ")" << std::endl;
         bool found = false;
         unsigned int global_multiplicity = options.global_multiplicity;
 

@@ -132,5 +132,32 @@ bool compare_symbol_vectors(const std::vector<GFq_Symbol>& v1, const std::vector
 	return true;
 }
 
+// ================================================================================================
+void print_symbols_and_erasures(std::ostream& os, const std::vector<GFq_Symbol>& v, std::set<unsigned int>& erasure_indexes)
+{
+	std::vector<rssoft::gf::GFq_Symbol>::const_iterator c_it = v.begin();
+    unsigned int i_c = 0;
+    os << "[";
+
+    for (; c_it != v.end(); ++c_it, i_c++)
+    {
+        if (c_it != v.begin())
+        {
+            os << ", ";
+        }
+
+        if (erasure_indexes.find(i_c) == erasure_indexes.end())
+        {
+            os <<  *c_it;
+        }
+        else
+        {
+            os << "*";
+        }
+    }
+
+    os << "]";
+}
+
 } // namespace gf
 } // namespace rssoft
