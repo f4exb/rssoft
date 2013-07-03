@@ -129,6 +129,7 @@ public:
 		codeword_average_score(0.0),
 		snr_dB(0.0),
 		nb_hard_errors(0),
+		nb_erasures(0),
 		nb_results_when_found(0),
 		result_order_when_found(0),
 		found(false),
@@ -143,6 +144,7 @@ public:
 	float codeword_average_score;
 	float snr_dB;
 	unsigned int nb_hard_errors;
+    unsigned int nb_erasures;
 	unsigned int nb_results_when_found;
 	unsigned int result_order_when_found;
 	bool found;
@@ -159,6 +161,7 @@ std::ostream& operator<<(std::ostream& os, const StatOutput& st)
 	os << st.snr_dB << ","
 		<< st.codeword_average_score << ","
 		<< st.nb_hard_errors << ","
+		<< st.nb_erasures << ","
 		<< st.found << ","
 		<< st.nb_results_when_found << ","
 		<< st.result_order_when_found << ","
@@ -410,7 +413,7 @@ int main(int argc, char *argv[])
         std::cout << "Hard-dec: (n=" << codeword.size() << ") ";
         rssoft::gf::print_symbols_and_erasures(std::cout, hard_decision, erased_indexes);
         std::cout << std::endl;
-        std::cout << " -> " << hard_decision_errors << " errors, " << options.nb_erasures << " erasures: " << ((2*hard_decision_errors)+options.nb_erasures < (n-options.k) ? "correctable" : "uncorrectable") << std::endl;
+        std::cout << " -> " << hard_decision_errors << " errors, " << options.nb_erasures << " erasures: " << ((2*hard_decision_errors)+options.nb_erasures < (n-options.k) ? "correctable" : "uncorrectable") << " with hard decision" << std::endl;
 
         if (options.verbosity > 0)
         {
@@ -457,6 +460,7 @@ int main(int argc, char *argv[])
         stat_output.snr_dB = options.snr_dB;
         stat_output.codeword_average_score = codeword_score / codeword_count;
         stat_output.nb_hard_errors = hard_decision_errors;
+        stat_output.nb_erasures = options.nb_erasures;
 
         std::cout << "Codeword score: " << codeword_score / codeword_count << " dB/symbol (best = " << best_score << ", worst = " << worst_score << ")" << std::endl;
         bool found = false;
@@ -464,7 +468,7 @@ int main(int argc, char *argv[])
 
         for (unsigned int ni=1; (ni<=options.iterations) && (!found); ni++)
         {
-        
+   			std::cout << std::endl;
 			rssoft::MultiplicityMatrix mat_M(mat_Pi, global_multiplicity);
 
 			if (options.verbosity > 0)
@@ -482,7 +486,6 @@ int main(int argc, char *argv[])
 			gskv.set_verbosity(options.verbosity);
 			rr.set_verbosity(options.verbosity);
 
-			std::cout << std::endl;
 			const rssoft::gf::GFq_BivariatePolynomial& Q = gskv.run(mat_M);
 			std::cout << "Q(X,Y) = " << Q << std::endl;
 
@@ -611,6 +614,7 @@ int main(int argc, char *argv[])
 
         if (options.print_stats)
         {
+            std::cout << std::endl;
         	std::cout << "#RES: " << stat_output << std::endl;
         }
 
