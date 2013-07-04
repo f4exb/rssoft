@@ -18,4 +18,19 @@ librssoft_la_SOURCES = GFq.cpp \
 
 #librssoft_la_LIBADD = -lrt 
 
-
+library_includedir=$(includedir)/rssoft
+library_include_HEADERS = GFq.h \
+    GFq_Element.h \
+    GFq_Polynomial.h \
+    GF2_Element.h \
+    GF2_Polynomial.h \
+    GFq_BivariateMonomial.h \
+    GFq_BivariatePolynomial.h \
+    GF_Utils.h \
+	ReliabilityMatrix.h \
+	MultiplicityMatrix.h \
+	GSKV_Interpolation.h \
+	RR_Factorization.h \
+    FinalEvaluation.h \
+    EvaluationValues.h \
+    RS_Encoding.h
