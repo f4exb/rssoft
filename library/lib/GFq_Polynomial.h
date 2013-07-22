@@ -102,6 +102,12 @@ public:
 	GFq_Polynomial(const GFq_Element& gfe);
 
 	/**
+	 * Constructs a n degree polynomial with the given element as coefficient. The reference Galois Field is taken
+	 * from the element
+	 */
+	GFq_Polynomial(const GFq_Element& gfe, unsigned int n);
+
+	/**
 	 * Destructor
 	 */
 	~GFq_Polynomial()

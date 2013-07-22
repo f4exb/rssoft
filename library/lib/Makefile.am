@@ -14,15 +14,17 @@ librssoft_la_SOURCES = GFq.cpp \
 	RR_Factorization.cpp \
     FinalEvaluation.cpp \
     EvaluationValues.cpp \
-    RS_Encoding.cpp
+    RS_Encoding.cpp \
+    RS_SystematicEncoding.cpp
 
 #librssoft_la_LIBADD = -lrt 
 
-library_includedir=$(includedir)/rssoft
+library_includedir=$(includedir)
 library_include_HEADERS = GFq.h \
     GFq_Element.h \
     GFq_Polynomial.h \
     GF2_Element.h \
+    GF_Exception.h \
     GF2_Polynomial.h \
     GFq_BivariateMonomial.h \
     GFq_BivariatePolynomial.h \
@@ -33,4 +35,5 @@ library_include_HEADERS = GFq.h \
 	RR_Factorization.h \
     FinalEvaluation.h \
     EvaluationValues.h \
-    RS_Encoding.h
+    RS_Encoding.h \
+    RS_SystematicEncoding.h

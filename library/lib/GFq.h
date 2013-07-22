@@ -53,7 +53,7 @@ namespace rssoft
 {
 namespace gf
 {
-typedef int GFq_Symbol;        //!< Symbol or binary-polynomial representation (ex: 5 is X^2+1)
+typedef unsigned int GFq_Symbol; //!< Symbol or binary-polynomial representation (ex: 5 is X^2+1)
 const GFq_Symbol GFERROR = -1; //!< Undefined symbol
 
 /**

@@ -64,6 +64,14 @@ public:
 	 */
 	void run(const std::vector<gf::GFq_Symbol>& message, std::vector<gf::GFq_Symbol>& codeword) const;
 
+	/**
+	 * Runs a systematic encoding
+	 * \param initial power of alpha
+	 * \param message Message symbols to be encoded
+	 * \param codeword RS codeword in elements of GFq that will be built
+	 */
+	void run_systematic(unsigned int init_pow, const std::vector<gf::GFq_Symbol>& message, std::vector<gf::GFq_Symbol>& codeword) const;
+
 protected:
 	const gf::GFq& gf; //!< Galois Field in use
 	unsigned int k; //!< k as in RS(n,k). n is the "size" of the Galois Field

@@ -22,6 +22,7 @@
 */
 
 #include "GFq.h"
+#include "GF_Exception.h"
 #include "GF2_Element.h"
 #include "GF2_Polynomial.h"
 #include "GF_Utils.h"
@@ -32,6 +33,7 @@
 #include "RR_Factorization.h"
 #include "FinalEvaluation.h"
 #include "RS_Encoding.h"
+#include "RS_SystematicEncoding.h"
 #include "URandom.h"
 #include <iostream>
 #include <iomanip>
@@ -39,6 +41,7 @@
 #include <cstdio>
 #include <getopt.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/tokenizer.hpp>
 
 // ================================================================================================
 // template to extract information from getopt more easily
@@ -61,6 +64,36 @@ template<typename TOpt, typename TField> bool extract_option(TField& field, char
 }
 
 // ================================================================================================
+// template to extract a vector of elements from a comma separated string
+template<typename TElement> bool extract_vector(std::vector<TElement>& velements, std::string cs_string)
+{
+    std::string element_str;
+    TElement element;
+
+    boost::char_separator<char> sep(",");
+    boost::tokenizer<boost::char_separator<char> > tokens(cs_string, sep);
+
+    boost::tokenizer<boost::char_separator<char> >::iterator tok_iter = tokens.begin();
+    boost::tokenizer<boost::char_separator<char> >::iterator toks_end = tokens.end();
+
+    try
+    {
+        for (; tok_iter != toks_end; ++tok_iter)
+        {
+            element = boost::lexical_cast<TElement>(*tok_iter);
+            velements.push_back(element);
+        }
+        return true;
+    }
+    catch (boost::bad_lexical_cast &)
+    {
+        std::cout << "wrong element in comma separated string argument: " << *tok_iter << std::endl;
+        return false;
+    }
+}
+
+
+// ================================================================================================
 struct Options
 {
 public:
@@ -78,7 +111,9 @@ public:
         print_sagemath(false),
         iterations(1),
         nb_erasures(0),
-        _indicator_int(0)
+        _indicator_int(0),
+        message_symbols_given(false),
+        systematic_coding(false)
     {
         // http://theory.cs.uvic.ca/gen/poly.html
         rssoft::gf::GF2_Element pp_gf8[4]   = {1,1,0,1};
@@ -117,6 +152,9 @@ public:
     unsigned int iterations; //!< Maximum number of retry iterations
     unsigned int nb_erasures; //!< Number of erasures
     int _indicator_int;
+    std::vector<rssoft::gf::GFq_Symbol> message_symbols;
+    bool message_symbols_given;
+    bool systematic_coding; //!< use systematic coding scheme
 private:
     std::vector<rssoft::gf::GF2_Polynomial> ppolys;
 };
@@ -187,6 +225,7 @@ bool Options::get_options(int argc, char *argv[])
             {"print-seed", no_argument, &_indicator_int, 1},
             {"print-stats", no_argument, &_indicator_int, 1},
             {"sagemath", no_argument, &_indicator_int, 1},
+            {"systematic", no_argument, &_indicator_int, 1},
             // these options do not set a flag
             {"snr", required_argument, 0, 'n'},        
             {"log2-n", required_argument, 0, 'm'},      
@@ -199,7 +238,7 @@ bool Options::get_options(int argc, char *argv[])
         };    
         
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:m:k:M:v:s:i:e:", long_options, &option_index);
+        c = getopt_long (argc, argv, "n:m:k:M:v:s:i:e:c:", long_options, &option_index);
         
         if (c == -1) // end of options
         {
@@ -220,6 +259,10 @@ bool Options::get_options(int argc, char *argv[])
                 if (strcmp("sagemath", long_options[option_index].name) == 0)
                 {
                     print_sagemath = true;
+                }
+                if (strcmp("systematic", long_options[option_index].name) == 0)
+                {
+                    systematic_coding = true;
                 }
                 _indicator_int = 0;
                 break;
@@ -248,6 +291,10 @@ bool Options::get_options(int argc, char *argv[])
                 break;
             case 'e':
                 status = extract_option<int, unsigned int>(nb_erasures, 'e');
+                break;
+            case 'c':
+            	status = extract_vector<rssoft::gf::GFq_Symbol>(message_symbols, std::string(optarg));
+            	message_symbols_given = true;
                 break;
             case '?':
                 status = false;
@@ -324,9 +371,20 @@ int main(int argc, char *argv[])
         
         std::vector<rssoft::gf::GFq_Symbol> message;
         
-        for (unsigned int i=0; i<options.k; i++)
+        if (options.message_symbols_given)
         {
-            message.push_back(ur.rand_int(q));
+        	message = options.message_symbols;
+        	if (message.size() != options.k)
+			{
+        		throw rssoft::gf::GF_Exception("Invalid message size");
+			}
+        }
+        else
+        {
+			for (unsigned int i=0; i<options.k; i++)
+			{
+				message.push_back(ur.rand_int(q));
+			}
         }
         
         std::cout << "Message : (k=" << message.size() << ") ";
@@ -334,10 +392,18 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
         rssoft::EvaluationValues evaluation_values(gfq); // use default
         rssoft::RS_Encoding rs_encoding(gfq, options.k, evaluation_values);
+        rssoft::RS_SystematicEncoding rs_systematic_encoding(gfq, options.k, 0);
         std::vector<rssoft::gf::GFq_Symbol> codeword;
         std::vector<unsigned int> row_indexes;
 
-        rs_encoding.run(message, codeword);
+        if (options.systematic_coding)
+        {
+        	rs_systematic_encoding.run(message, codeword);
+        }
+        else
+        {
+        	rs_encoding.run(message, codeword);
+        }
 
         std::cout << "Codeword: (n=" << codeword.size() << ") ";
         rssoft::gf::print_symbols_vector(std::cout, codeword);

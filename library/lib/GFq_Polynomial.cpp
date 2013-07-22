@@ -100,6 +100,18 @@ GFq_Polynomial::GFq_Polynomial(const GFq_Element& gfe) :
 }
 
 // ================================================================================================
+GFq_Polynomial::GFq_Polynomial(const GFq_Element& gfe, unsigned int n) :
+		gf(gfe.field()), alpha_format(false)
+{
+	if (n > 0)
+	{
+		poly.assign(n,GFq_Element(gf,0));
+	}
+
+	poly.push_back(gfe);
+}
+
+// ================================================================================================
 void GFq_Polynomial::init(const std::vector<GFq_Element>& _poly)
 {
 	poly = _poly;

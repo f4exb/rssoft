@@ -138,6 +138,14 @@ public:
     }
     
     /**
+     * Get a pointer to matrix storage for update
+     */
+    float *get_raw_matrix() 
+    {
+        return _matrix;
+    }
+    
+    /**
      * Finds the maximum value in the matrix
      */
     float find_max(unsigned int& i_row, unsigned int& i_col) const;
