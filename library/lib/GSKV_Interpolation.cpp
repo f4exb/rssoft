@@ -61,6 +61,17 @@ GSKV_Interpolation::~GSKV_Interpolation()
 {}
 
 // ================================================================================================
+void GSKV_Interpolation::init()
+{
+	it_number = 0;
+	Cm = 0;
+	final_ig = 0;
+	dX = 0;
+	dY = 0;
+	mcost = 0;
+}
+
+// ================================================================================================
 const gf::GFq_BivariatePolynomial& GSKV_Interpolation::run(const MultiplicityMatrix& mmat)
 {
 	std::pair<unsigned int, unsigned int> max_degrees = maximum_degrees(mmat);
@@ -108,6 +119,9 @@ void GSKV_Interpolation::init_G(unsigned int dY)
 {
 	unsigned int inclod = 1;
 	unsigned int lod = 0;
+	G.clear();
+	calcG.clear();
+	lodG.clear();
 
 	for (unsigned int i=0; i<dY+1; i++)
 	{
@@ -260,9 +274,9 @@ void GSKV_Interpolation::process_hasse(const gf::GFq_Element& x, const gf::GFq_E
 		if (it_number < mcost)
 		G.assign(G_next.begin(), G_next.end());
 		lodG.assign(lodG_next.begin(), lodG_next.end());
-		it_number++;
     }
     
+	it_number++;
 	DEBUG_OUT(verbosity > 1, std::endl);
 }
 

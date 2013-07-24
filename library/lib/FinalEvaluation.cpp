@@ -87,6 +87,13 @@ FinalEvaluation::~FinalEvaluation()
 {}
 
 // ================================================================================================
+void FinalEvaluation::init()
+{
+	codewords.clear();
+	messages.clear();
+}
+
+// ================================================================================================
 void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, const ReliabilityMatrix& relmat)
 {
     if (polynomials.size() == 0)

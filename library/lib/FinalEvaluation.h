@@ -146,6 +146,11 @@ public:
     ~FinalEvaluation();
     
     /**
+     * (Re)initialize object before a new run
+     */
+    void init();
+
+    /**
      * Runs one evaluation for the given polynomials
      */
     void run(const std::vector<gf::GFq_Polynomial>& polynomials, const ReliabilityMatrix& relmat);

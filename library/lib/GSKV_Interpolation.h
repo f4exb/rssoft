@@ -55,6 +55,11 @@ public:
 	 * Destructor
 	 */
 	~GSKV_Interpolation();
+
+	/**
+	 * (Re)initialize internal objects to prepare a new run
+	 */
+	void init();
     
     /**
      * Get the X evaluation points used to calculate candidate codewords (horizontal or column matrix wise)

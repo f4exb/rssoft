@@ -603,6 +603,8 @@ int main(int argc, char *argv[])
 							stat_output.nb_false_results++;
 						}
 					}
+
+					final_evaluation.init();
 				}
 			}
 
@@ -676,6 +678,8 @@ int main(int argc, char *argv[])
 
 			global_multiplicity = mm_cost;
 			stat_output.nb_iterations = ni;
+			gskv.init();
+			rr.init();
         } // retry iterations
 
         if (options.print_stats)
