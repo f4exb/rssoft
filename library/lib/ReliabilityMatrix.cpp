@@ -138,6 +138,8 @@ void ReliabilityMatrix::normalize()
 float ReliabilityMatrix::find_max(unsigned int& i_row, unsigned int& i_col) const
 {
     float max = 0.0;
+    i_row = 0; // prevent core dump if all items are 0
+    i_col = 0;
 
     for (unsigned int ic = 0; ic < _message_length; ic++)
     {
