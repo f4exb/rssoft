@@ -30,6 +30,12 @@
 namespace ccsoft
 {
 
+/**
+ * XOR all bits in a register. Uses the bit counting method.
+ * \tparam T_Register Type of register
+ * \param reg Register
+ * \return true=1 or false=0
+ */
 template<typename T_Register>
 bool xorbits(const T_Register& reg)
 {
@@ -45,12 +51,23 @@ bool xorbits(const T_Register& reg)
     return (nb_ones % 2) == 1;
 }
 
+/**
+ * Print the content of a register in hexadecimal to an output stream
+ * \tparam T_Register Type of register
+ * \param reg Register
+ * \param os Output stream
+ */
 template<typename T_Register>
 void print_register(const T_Register& reg, std::ostream& os)
 {
     os << std::hex << reg;
 }
 
+/**
+ * Print the content of a unsigned char register in hexadecimal to an output stream
+ * \param reg Register
+ * \param os Output stream
+ */
 template<>
 void print_register<unsigned char>(const unsigned char& reg, std::ostream& os)
 {
@@ -149,6 +166,7 @@ public:
      * Encode a new symbol of k bits into a symbol of n bits
      * \param in_symbol Input symbol
      * \param out_symbol Output symbol
+     * \return true if successful
      */
     bool encode(const T_IOSymbol& in_symbol, T_IOSymbol& out_symbol)
     {
@@ -183,6 +201,7 @@ public:
     //=============================================================================================
     /**
      * Prints encoding characteristics to an output stream
+     * \param os The output stream
      */
     void print(std::ostream& os)
     {
@@ -203,11 +222,11 @@ public:
     }
 
 protected:
-    unsigned int k;
-    unsigned int n;
+    unsigned int k; //!< Number of input bits or input symbol size in bits
+    unsigned int n; //!< Number of output bits or output symbol size in bits
     std::vector<unsigned int> constraints; //!< As many constraints as there are inputs
     std::vector<std::vector<T_Register> > genpoly_representations; //!< As many generator polynomials vectors (the size of the number of outputs) as there are inputs
-    std::vector<T_Register> registers; // Memory registers as many as there are inputs
+    std::vector<T_Register> registers; //!< Memory registers as many as there are inputs
 };
 
 } // namespace ccsoft
