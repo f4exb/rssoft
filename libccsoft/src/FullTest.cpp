@@ -27,11 +27,14 @@
 #include "CC_TreeNode.h"
 #include "CC_TreeEdge.h"
 #include "CCSoft_Exception.h"
+#include "URandom.h"
 
 #include <getopt.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 #include <iostream>
+#include <sstream>
+#include <cstring>
 
 // ================================================================================================
 // template to extract information from getopt more easily
@@ -91,7 +94,12 @@ public:
         dot_output(false),
         snr_dB(0),
         verbosity(0),
-        nb_random_symbols(0)
+        indicator_int(0),
+        print_seed(false),
+        seed(0),
+        has_seed(false),
+        nb_random_symbols(0),
+        generate_random_symbols(false)
     {}
     
     ~Options()
@@ -103,11 +111,17 @@ public:
     bool dot_output;
     float snr_dB;
     unsigned int verbosity;
-    unsigned int nb_random_symbols;
     std::string dot_filename;
     std::vector<unsigned int> k_constraints;
     std::vector<std::vector<unsigned int> > generator_polys;
     std::vector<unsigned int> input_symbols;
+    int indicator_int;
+    bool print_seed;
+    unsigned int seed;
+    bool has_seed;
+    unsigned int nb_random_symbols;
+    bool generate_random_symbols;
+
 private:
     bool parse_generator_polys_data(std::string generator_polys_data_str);
 };
@@ -123,6 +137,7 @@ bool Options::get_options(int argc, char *argv[])
         static struct option long_options[] =
         {
             // these options set a flag
+            {"print-seed", no_argument, &indicator_int, 1},
             // these options do not set a flag
             {"snr", required_argument, 0, 'n'},        
             {"verbosity", required_argument, 0, 'v'},              
@@ -131,10 +146,11 @@ bool Options::get_options(int argc, char *argv[])
             {"gen-polys", required_argument, 0, 'g'},
             {"in-symbols", required_argument, 0, 'i'},
             {"nb-random-symbols", required_argument, 0, 'r'},
+            {"seed", required_argument, 0, 's'},
         };    
         
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:", long_options, &option_index);
+        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:s:", long_options, &option_index);
         
         if (c == -1) // end of options
         {
@@ -143,6 +159,12 @@ bool Options::get_options(int argc, char *argv[])
 
         switch(c)
         {
+            case 0: // set flag
+                if (strcmp("print-seed", long_options[option_index].name) == 0)
+                {
+                    print_seed = true;
+                }
+                break;
             case 'n':
                 make_noise = true;
                 status = extract_option<double, float>(snr_dB, 'n');
@@ -162,6 +184,14 @@ bool Options::get_options(int argc, char *argv[])
                 break;
             case 'i':
                 status = extract_vector<unsigned int>(input_symbols, ",", std::string(optarg));
+                break;
+            case 'r':
+                status = extract_option<int, unsigned int>(nb_random_symbols, 'r');
+                generate_random_symbols = true;
+                break;
+            case 's':
+                status = extract_option<int, unsigned int>(seed, 's');
+                has_seed = true;
                 break;
             case '?':
                 status = false;
@@ -200,6 +230,18 @@ bool Options::parse_generator_polys_data(std::string generator_polys_data_str)
 }
 
 // ================================================================================================
+void create_symbol_data(float *symbol_data,
+        unsigned int nb_symbols,
+        unsigned int out_symbol,
+        float snr_dB,
+        bool make_noise)
+{
+
+}
+
+URandom ur; // Global random generator object
+
+// ================================================================================================
 int main(int argc, char *argv[])
 {
     Options options;
@@ -210,6 +252,30 @@ int main(int argc, char *argv[])
         {
             ccsoft::CC_StackDecoding<unsigned int, unsigned int> cc_decoding(options.k_constraints, options.generator_polys);
             cc_decoding.get_encoding().print(std::cout);
+            unsigned int out_symbols_nb = 1<<cc_decoding.get_encoding().get_n();
+            unsigned int in_symbols_nb = 1<<cc_decoding.get_encoding().get_k();
+
+            if (options.has_seed)
+            {
+                ur.set_seed(options.seed);
+            }
+
+            if (options.print_seed)
+            {
+                unsigned int seed = ur.rand_uword();
+                std::cout << "Seed = " << std::dec << seed << std::endl;
+                ur.set_seed(seed);
+            }
+
+            if (options.generate_random_symbols)
+            {
+                options.input_symbols.clear(); // ignore given input symbols
+
+                for (unsigned int i=0; i<options.nb_random_symbols; i++)
+                {
+                    options.input_symbols.push_back(ur.rand_int(in_symbols_nb));
+                }
+            }
             
             if (options.input_symbols.size() > 0)
             {
@@ -218,12 +284,29 @@ int main(int argc, char *argv[])
                     options.input_symbols.push_back(0);
                 }
                 
+                ccsoft::ReliabilityMatrix relmat(cc_decoding.get_encoding().get_n(), options.input_symbols.size());
+                unsigned int nb_symbols = 1<<cc_decoding.get_encoding().get_n();
+                float *symbol_data = new float[nb_symbols];
+
+                std::ostringstream oos;
+
                 for (unsigned int i=0; i<options.input_symbols.size(); i++)
                 {
                     unsigned int out_symbol;
                     cc_decoding.get_encoding().encode(options.input_symbols[i], out_symbol);
-                    std::cout << out_symbol << " ";
+                    create_symbol_data(symbol_data, nb_symbols, out_symbol, options.snr_dB, options.make_noise);
+                    relmat.enter_symbol_data(symbol_data);
+                    std::cout << options.input_symbols[i] << " ";
+                    oos << out_symbol << " ";
                 }
+
+                std::cout << std::endl;
+                std::cout << oos.str() << std::endl;
+
+                relmat.normalize();
+
+
+                delete[] symbol_data;
             }
             
             std::cout << std::endl;

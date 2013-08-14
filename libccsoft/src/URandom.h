@@ -85,7 +85,7 @@ public:
     
     unsigned int rand_int(unsigned int n) // GENERATE RANDOM INTEGER FROM 0, 1, ..., (n-1)
     { 
-      return (unsigned int) (n * rand_uniform());
+        return (unsigned int) (n * rand_uniform());
     }    
     
     double rand_gaussian() // GAUSSIAN GENERATOR.  Done by using the Box-Muller method
@@ -98,7 +98,7 @@ public:
     
     void set_seed(unsigned int seed)
     {
-        std::cout << "use seed: " << seed << std::endl;
+        std::cout << "use seed: " << std::dec << seed << std::endl;
         srand(seed);
         use_seed = true;
     }
