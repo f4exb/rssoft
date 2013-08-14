@@ -145,7 +145,7 @@ float ReliabilityMatrix::find_max(unsigned int& i_row, unsigned int& i_col) cons
     {
         for (unsigned int ir = 0; ir < _nb_symbols; ir++)
         {
-            if (_matrix[ic*_nb_symbols + ir] > max)
+            if (_matrix[ic*_nb_symbols + ir] >= max)
             {
                 max = _matrix[ic*_nb_symbols + ir];
                 i_row = ir;
@@ -154,6 +154,24 @@ float ReliabilityMatrix::find_max(unsigned int& i_row, unsigned int& i_col) cons
         }
     }
     
+    return max;
+}
+
+// ================================================================================================
+float ReliabilityMatrix::find_max_in_col(unsigned int& i_row, unsigned int i_col, float prev_max) const
+{
+    float max = 0.0;
+    i_row = 0; // prevent core dump if all items are 0
+
+    for (unsigned int ir = 0; ir < _nb_symbols; ir++)
+    {
+        if ((_matrix[i_col*_nb_symbols + ir] >= max) && (_matrix[i_col*_nb_symbols + ir] < prev_max))
+        {
+            max = _matrix[i_col*_nb_symbols + ir];
+            i_row = ir;
+        }
+    }
+
     return max;
 }
 

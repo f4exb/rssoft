@@ -151,6 +151,14 @@ public:
     float find_max(unsigned int& i_row, unsigned int& i_col) const;
 
     /**
+     * Finds the maximum value in a column of the matrix
+     * \param i_row Reference to the row index where the maximum is found
+     * \param i_col Column index
+     * \param prev_max Value of the previous maximum when searching next maximum
+     */
+    float find_max_in_col(unsigned int& i_row, unsigned int i_col, float prev_max = 1.0) const;
+
+    /**
      * Prints a reliability matrix to an output stream
      */
     friend std::ostream& operator <<(std::ostream& os, const ReliabilityMatrix& matrix);

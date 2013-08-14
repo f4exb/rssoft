@@ -20,8 +20,8 @@
  Convolutional encoder class
 
  */
-#ifndef __CC_ENCODER_H__
-#define __CC_ENCODER_H__
+#ifndef __CC_ENCODING_H__
+#define __CC_ENCODING_H__
 
 #include "CCSoft_Exception.h"
 #include <vector>
@@ -75,6 +75,29 @@ void print_register<unsigned char>(const unsigned char& reg, std::ostream& os)
 }
 
 /**
+ * Print the content of a I/O symbol to an output stream
+ * \tparam T_IOSymbol Type of I/O symbol
+ * \param sym I/O symbol
+ * \param os Output stream
+ */
+template<typename T_IOSymbol>
+void print_symbol(const T_IOSymbol& sym, std::ostream& os)
+{
+    os << std::dec << sym;
+}
+
+/**
+ * Print the content of a unsigned char I/O symbol yo an output stream
+ * \param sym I/O symbol
+ * \param os Output stream
+ */
+template<>
+void print_symbol<unsigned char>(const unsigned char& sym, std::ostream& os)
+{
+    os << std::dec << (unsigned int) sym;
+}
+
+/**
  * \brief Convolutional encoding class. Supports any k,n with k<n.
  * The input bits of a symbol are clocked simultaneously into the right hand side, or least significant position of the internal
  * registers. Therefore the given polynomial representation of generators should follow the same convention.
@@ -100,7 +123,8 @@ public:
         k(_constraints.size()),
         constraints(_constraints),
         genpoly_representations(_genpoly_representations),
-        registers(k,0)
+        registers(k,0),
+        m(0)
     {
         if (k < 1)
         {
@@ -129,6 +153,11 @@ public:
             if (genpoly_representations[ci].size() < min_nb_outputs)
             {
                 min_nb_outputs = genpoly_representations[ci].size();
+            }
+
+            if (constraints[ci] > m)
+            {
+                m = constraints[ci];
             }
         }
 
@@ -166,15 +195,20 @@ public:
      * Encode a new symbol of k bits into a symbol of n bits
      * \param in_symbol Input symbol
      * \param out_symbol Output symbol
+     * \param no_step Do not step registers before insert (used for assumptions during decoding)
      * \return true if successful
      */
-    bool encode(const T_IOSymbol& in_symbol, T_IOSymbol& out_symbol)
+    bool encode(const T_IOSymbol& in_symbol, T_IOSymbol& out_symbol, bool no_step = false)
     {
         T_IOSymbol w_in = in_symbol;
 
         // load registers with new symbol bits
         for (unsigned int ki=0; ki<k; ki++)
         {
+            if (no_step)
+            {
+                registers[ki] >>= 1; // flush bit
+            }
             registers[ki] <<= 1; // make room for bit
             registers[ki] += w_in & 1; // insert bit
             w_in >>= 1; // move to next input bit
@@ -205,7 +239,7 @@ public:
      */
     void print(std::ostream& os)
     {
-        std::cout << "k=" << k << ", n=" << n << std::endl;
+        std::cout << "k=" << k << ", n=" << n << ", m=" << m << std::endl;
 
         for (unsigned int ci=0; ci<k; ci++)
         {
@@ -221,9 +255,51 @@ public:
         }
     }
 
+    /**
+     * Get the k parameter
+     */
+    unsigned int get_k() const
+    {
+        return k;
+    }
+
+    /**
+     * Get the n paramater
+     */
+    unsigned int get_n() const
+    {
+        return n;
+    }
+
+    /**
+     * Get the maximum register size
+     */
+    unsigned int get_m() const
+    {
+        return m;
+    }
+
+    /**
+     * Get registers reference
+     */
+    const std::vector<T_Register>& get_registers() const
+    {
+        return registers;
+    }
+
+    /**
+     * Set registers
+     */
+    void set_registers(const std::vector<T_Register>& _registers)
+    {
+        registers = _registers;
+    }
+
+
 protected:
     unsigned int k; //!< Number of input bits or input symbol size in bits
     unsigned int n; //!< Number of output bits or output symbol size in bits
+    unsigned int m; //!< Maximum register length
     std::vector<unsigned int> constraints; //!< As many constraints as there are inputs
     std::vector<std::vector<T_Register> > genpoly_representations; //!< As many generator polynomials vectors (the size of the number of outputs) as there are inputs
     std::vector<T_Register> registers; //!< Memory registers as many as there are inputs
@@ -232,4 +308,4 @@ protected:
 } // namespace ccsoft
 
 
-#endif // __CC_ENCODER_H__
+#endif // __CC_ENCODING_H__

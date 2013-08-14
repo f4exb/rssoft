@@ -7,4 +7,10 @@ libccsoft_la_SOURCES = \
 
 library_includedir=$(includedir)
 library_include_HEADERS = \
-	ReliabilityMatrix.h 
+	ReliabilityMatrix.h \
+	CCSoft_Exception.h \
+	CC_Encoding.h \
+	CC_StackDecoding.h \
+	CC_TreeEdge.h \
+    CC_TreeNode.h \
+    CC_TreeGraphviz.h

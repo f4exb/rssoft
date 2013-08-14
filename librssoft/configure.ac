@@ -10,6 +10,21 @@ ARCH=`uname -m`
 AC_PROG_CXX
 
 # ------------------------------------------------------------------------------
+# DOXYGEN
+# ------------------------------------------------------------------------------
+
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "$DOXYGEN";
+   then AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+fi
+
+AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
+#AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([doc/Doxyfile])])
+if test -n "$DOXYGEN"; then
+    AC_CONFIG_FILES([doc/Doxyfile])
+fi
+
+# ------------------------------------------------------------------------------
 # BOOST
 # ------------------------------------------------------------------------------
 BOOST_REQUIRE([1.33])
@@ -21,7 +36,7 @@ BOOST_REQUIRE([1.33])
 dnl: this is a comment
 dnl: ${CXXFLAGS=-g}
 
-AC_CONFIG_FILES([Makefile lib/Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile doc/Makefile lib/Makefile src/Makefile])
 AC_OUTPUT
 
 
