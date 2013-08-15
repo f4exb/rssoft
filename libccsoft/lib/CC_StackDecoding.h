@@ -97,8 +97,8 @@ public:
             const std::vector<std::vector<T_Register> >& genpoly_representations) :
                 encoding(constraints, genpoly_representations),
                 root_node(0),
-                use_giveup_threshold(false),
-                giveup_threshold(0.0),
+                use_metric_limit(false),
+                metric_limit(0.0),
                 use_node_limit(false),
                 node_limit(0),
                 codeword_score(0.0),
@@ -122,8 +122,8 @@ public:
      */
     void set_giveup_threshold(float _giveup_threshold)
     {
-        giveup_threshold = _giveup_threshold;
-        use_giveup_threshold = true;
+        metric_limit = _giveup_threshold;
+        use_metric_limit = true;
     }
     
     /** 
@@ -131,7 +131,7 @@ public:
      */
     void reset_giveup_threshold()
     {
-        use_giveup_threshold = false;
+        use_metric_limit = false;
     }
 
     /**
@@ -149,6 +149,23 @@ public:
     void reset_node_limit()
     {
         use_node_limit = false;
+    }
+
+    /**
+     * Set the metric limit threshold
+     */
+    void set_metric_limit(float _metric_limit)
+    {
+        metric_limit = _metric_limit;
+        use_metric_limit = true;
+    }
+
+    /**
+     * Reset the metric limit threshold. The process will continue until out of memory or end of the tree.
+     */
+    void reset_metric_limit()
+    {
+        use_metric_limit = false;
     }
 
     /**
@@ -265,9 +282,9 @@ public:
         reset();
         init_root(relmat); // initialize with root node
         
-        // loop until we get to a terminal node or the give up condition is encountered 
-        while ((node_stack.begin()->second->get_depth() < relmat.get_message_length() - 1) 
-            && (!use_giveup_threshold || node_stack.begin()->second->get_path_metric() > giveup_threshold))
+        // loop until we get to a terminal node or the metric limit is encountered hence the stack is empty
+        while ((node_stack.size() > 0)
+            && (node_stack.begin()->second->get_depth() < relmat.get_message_length() - 1))
         {
             CC_TreeNode<T_IOSymbol, T_Register>* node = node_stack.begin()->second;
             //std::cout << std::dec << node->get_id() << ":" << node->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
@@ -281,7 +298,7 @@ public:
         }
         
         // Top node has the solution if we have not given up
-        if (!use_giveup_threshold || node_stack.begin()->second->get_path_metric() > giveup_threshold)
+        if (!use_metric_limit || node_stack.size() != 0)
         {
             //std::cout << "final: " << std::dec << node_stack.begin()->second->get_id() << ":" << node_stack.begin()->second->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
             back_track(node_stack.begin()->second, decoded_message, true); // back track from terminal node to retrieve decoded message
@@ -290,6 +307,7 @@ public:
         }
         else
         {
+            std::cerr << "Metric limit encountered" << std::endl;
             return false; // no solution
         }
     }
@@ -336,14 +354,17 @@ protected:
             encoding.encode(in_symbol, out_symbol, in_symbol > 0); // step only for a new symbol place
             float edge_metric = log2(relmat(out_symbol, forward_depth));
             float forward_path_metric = edge_metric + node->get_path_metric();
-            CC_TreeEdge<T_IOSymbol, T_Register> *new_edge = new CC_TreeEdge<T_IOSymbol, T_Register>(edge_count++, in_symbol, out_symbol, edge_metric, node);
-            CC_TreeNode<T_IOSymbol, T_Register> *dest_node = new CC_TreeNode<T_IOSymbol, T_Register>(node_count, new_edge, forward_path_metric, forward_depth);
-            dest_node->set_registers(encoding.get_registers());
-            new_edge->set_p_destination(dest_node);
-            node->add_outgoing_edge(new_edge); // add forward edge
-            node_stack[NodeOrdering(forward_path_metric,node_count)] = dest_node;
-            //std::cout << "->" << std::dec << node_count << ":" << forward_depth << " (" << (unsigned int) in_symbol << "," << (unsigned int) out_symbol << "): " << forward_path_metric << std::endl;
-            node_count++;
+            if ((!use_metric_limit) || (forward_path_metric > metric_limit))
+            {
+                CC_TreeEdge<T_IOSymbol, T_Register> *new_edge = new CC_TreeEdge<T_IOSymbol, T_Register>(edge_count++, in_symbol, out_symbol, edge_metric, node);
+                CC_TreeNode<T_IOSymbol, T_Register> *dest_node = new CC_TreeNode<T_IOSymbol, T_Register>(node_count, new_edge, forward_path_metric, forward_depth);
+                dest_node->set_registers(encoding.get_registers());
+                new_edge->set_p_destination(dest_node);
+                node->add_outgoing_edge(new_edge); // add forward edge
+                node_stack[NodeOrdering(forward_path_metric,node_count)] = dest_node;
+                //std::cout << "->" << std::dec << node_count << ":" << forward_depth << " (" << (unsigned int) in_symbol << "," << (unsigned int) out_symbol << "): " << forward_path_metric << std::endl;
+                node_count++;
+            }
         }
         
         cur_depth = forward_depth; // new encoder position
@@ -394,8 +415,8 @@ protected:
     CC_Encoding<T_Register, T_IOSymbol> encoding; //!< Convolutional encoding object
     CC_TreeNode<T_IOSymbol, T_Register> *root_node; //!< Root node
     std::map<NodeOrdering, CC_TreeNode<T_IOSymbol, T_Register>*, std::greater<NodeOrdering> > node_stack; //!< Ordered stack of nodes by decreasing path metric
-    bool use_giveup_threshold; //!< True if a give up path metric threshold is used
-    float giveup_threshold; //!< The give up path metric threshold
+    bool use_metric_limit; //!< True if a give up path metric threshold is used
+    float metric_limit; //!< The give up path metric threshold
     bool use_node_limit; //!< Stop above number of nodes threshold
     unsigned int node_limit; //!< Number of nodes threshold
     float codeword_score; //!< Metric of the codeword found if any

@@ -128,7 +128,11 @@ public:
         seed(0),
         has_seed(false),
         nb_random_symbols(0),
-        generate_random_symbols(false)
+        generate_random_symbols(false),
+        node_limit(0),
+        use_node_limit(false),
+        metric_limit(0.0),
+        use_metric_limit(false)
     {}
     
     ~Options()
@@ -152,6 +156,8 @@ public:
     bool generate_random_symbols;
     unsigned int node_limit;
     bool use_node_limit;
+    float metric_limit;
+    bool use_metric_limit;
 
 private:
     bool parse_generator_polys_data(std::string generator_polys_data_str);
@@ -179,10 +185,11 @@ bool Options::get_options(int argc, char *argv[])
             {"nb-random-symbols", required_argument, 0, 'r'},
             {"seed", required_argument, 0, 's'},
             {"node-limit", required_argument, 0, 'N'},
+            {"metric-limit", required_argument, 0, 'M'},
         };    
         
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:s:N:", long_options, &option_index);
+        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:s:N:M:", long_options, &option_index);
         
         if (c == -1) // end of options
         {
@@ -226,8 +233,12 @@ bool Options::get_options(int argc, char *argv[])
                 has_seed = true;
                 break;
             case 'N':
-                status = extract_option<int, unsigned int>(node_limit, 's');
+                status = extract_option<int, unsigned int>(node_limit, 'N');
                 use_node_limit = true;
+                break;
+            case 'M':
+                status = extract_option<float, float>(metric_limit, 'M');
+                use_metric_limit = true;
                 break;
             case '?':
                 status = false;
@@ -306,6 +317,11 @@ int main(int argc, char *argv[])
             if (options.use_node_limit)
             {
                 cc_decoding.set_node_limit(options.node_limit);
+            }
+
+            if (options.use_metric_limit)
+            {
+                cc_decoding.set_metric_limit(options.metric_limit);
             }
 
             if (options.has_seed)
