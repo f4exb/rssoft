@@ -61,6 +61,7 @@ template<typename T_Register>
 void print_register(const T_Register& reg, std::ostream& os)
 {
     os << std::hex << reg;
+    os << std::dec;
 }
 
 /**
@@ -72,6 +73,7 @@ template<>
 void print_register<unsigned char>(const unsigned char& reg, std::ostream& os)
 {
     os << std::hex << (unsigned int) reg;
+    os << std::dec;
 }
 
 /**

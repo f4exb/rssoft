@@ -34,7 +34,11 @@
 #include <boost/tokenizer.hpp>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <cstring>
+
+static URandom ur; // Global random generator object
+
 
 // ================================================================================================
 // template to extract information from getopt more easily
@@ -86,6 +90,31 @@ template<typename TElement> bool extract_vector(std::vector<TElement>& velements
 }
 
 // ================================================================================================
+// template to print a vector of printable elements
+template<typename TDisplay, typename TElement, typename TStream> void print_vector(const std::vector<TElement>& v, TStream& os)
+{
+    os << "[";
+
+    typename std::vector<TElement>::const_iterator it = v.begin();
+    const typename std::vector<TElement>::const_iterator v_end = v.end();
+
+    for (; it != v_end; ++it)
+    {
+
+        os <<  (TDisplay)(*it);
+
+        if (it != v.begin()+v.size()-1)
+        {
+            os << ", ";
+        }
+
+    }
+
+    os << "]";
+}
+
+
+// ================================================================================================
 struct Options
 {
 public:
@@ -121,6 +150,8 @@ public:
     bool has_seed;
     unsigned int nb_random_symbols;
     bool generate_random_symbols;
+    unsigned int node_limit;
+    bool use_node_limit;
 
 private:
     bool parse_generator_polys_data(std::string generator_polys_data_str);
@@ -147,10 +178,11 @@ bool Options::get_options(int argc, char *argv[])
             {"in-symbols", required_argument, 0, 'i'},
             {"nb-random-symbols", required_argument, 0, 'r'},
             {"seed", required_argument, 0, 's'},
+            {"node-limit", required_argument, 0, 'N'},
         };    
         
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:s:", long_options, &option_index);
+        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:s:N:", long_options, &option_index);
         
         if (c == -1) // end of options
         {
@@ -192,6 +224,10 @@ bool Options::get_options(int argc, char *argv[])
             case 's':
                 status = extract_option<int, unsigned int>(seed, 's');
                 has_seed = true;
+                break;
+            case 'N':
+                status = extract_option<int, unsigned int>(node_limit, 's');
+                use_node_limit = true;
                 break;
             case '?':
                 status = false;
@@ -236,10 +272,22 @@ void create_symbol_data(float *symbol_data,
         float snr_dB,
         bool make_noise)
 {
+    double std_dev  = 1.0 / pow(10.0, (snr_dB/10.0)); // Standard deviation for power AWGN
 
+    for (unsigned int si=0; si<nb_symbols; si++)
+    {
+        if (si == out_symbol)
+        {
+            symbol_data[si] = 1.0 + (make_noise ? std_dev * ur.rand_gaussian() : 0.0);
+        }
+        else
+        {
+            symbol_data[si] = 0.0 + (make_noise ? std_dev * ur.rand_gaussian() : 0.0);
+        }
+
+        symbol_data[si] *= symbol_data[si];
+    }
 }
-
-URandom ur; // Global random generator object
 
 // ================================================================================================
 int main(int argc, char *argv[])
@@ -254,6 +302,11 @@ int main(int argc, char *argv[])
             cc_decoding.get_encoding().print(std::cout);
             unsigned int out_symbols_nb = 1<<cc_decoding.get_encoding().get_n();
             unsigned int in_symbols_nb = 1<<cc_decoding.get_encoding().get_k();
+
+            if (options.use_node_limit)
+            {
+                cc_decoding.set_node_limit(options.node_limit);
+            }
 
             if (options.has_seed)
             {
@@ -300,16 +353,45 @@ int main(int argc, char *argv[])
                     oos << out_symbol << " ";
                 }
 
+                delete[] symbol_data;
                 std::cout << std::endl;
                 std::cout << oos.str() << std::endl;
 
                 relmat.normalize();
+                std::vector<unsigned int> result;
 
+                if (cc_decoding.decode(relmat, result))
+                {
+                    print_vector<unsigned int>(result, std::cout);
+                    std::cout << " ";
 
-                delete[] symbol_data;
+                    if (result == options.input_symbols)
+                    {
+                        std::cout << "Success!" << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "Failed :(" << std::endl;
+                    }
+
+                    if (options.dot_output)
+                    {
+                        std::ofstream dot_file;
+                        dot_file.open(options.dot_filename.c_str());
+                        cc_decoding.print_dot(dot_file);
+                        dot_file.close();
+                    }
+                }
+                else
+                {
+                    std::cout << "Message cannot be decoded" << std::endl;
+                }
+
+                std::cout << "score = " << cc_decoding.get_score()
+                        << " stack_score = " << cc_decoding.get_stack_score()
+                        << " #nodes = " << cc_decoding.get_nb_nodes()
+                        << " stack_size = " << cc_decoding.get_stack_size() << std::endl;
             }
-            
-            std::cout << std::endl;
         }
         catch (ccsoft::CCSoft_Exception& e)
         {

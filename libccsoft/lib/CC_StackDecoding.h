@@ -99,6 +99,8 @@ public:
                 root_node(0),
                 use_giveup_threshold(false),
                 giveup_threshold(0.0),
+                use_node_limit(false),
+                node_limit(0),
                 codeword_score(0.0),
                 cur_depth(-1),
                 node_count(0),
@@ -130,6 +132,23 @@ public:
     void reset_giveup_threshold()
     {
         use_giveup_threshold = false;
+    }
+
+    /**
+     * Set the node limit threshold
+     */
+    void set_node_limit(unsigned int _node_limit)
+    {
+        node_limit = _node_limit;
+        use_node_limit = true;
+    }
+
+    /**
+     * Reset the node limit threshold. The process will continue until out of memory or end of the tree.
+     */
+    void reset_node_limit()
+    {
+        use_node_limit = false;
     }
 
     /**
@@ -176,6 +195,14 @@ public:
     }
     
     /**
+     * Get the score at the top of the stack. Valid anytime the process has started (stack not empty).
+     */
+    float get_stack_score() const
+    {
+        return node_stack.begin()->first.path_metric;
+    }
+
+    /**
      * Get the codeword score in dB/Symbol units. Valid only if decode returned successfully.
      */     
     float get_score_db_sym() const
@@ -190,6 +217,22 @@ public:
         }
     }
     
+    /**
+     * Get the number of nodes created minus root node
+     */
+    unsigned int get_nb_nodes() const
+    {
+        return node_count;
+    }
+
+    /**
+     * Get the stack size
+     */
+    unsigned int get_stack_size() const
+    {
+        return node_stack.size();
+    }
+
     /**
      * Print the dot (Graphviz) file of the current decode tree to an output stream
      * \param os Output stream
@@ -227,14 +270,20 @@ public:
             && (!use_giveup_threshold || node_stack.begin()->second->get_path_metric() > giveup_threshold))
         {
             CC_TreeNode<T_IOSymbol, T_Register>* node = node_stack.begin()->second;
-            std::cout << std::dec << node->get_id() << ":" << node->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
+            //std::cout << std::dec << node->get_id() << ":" << node->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
             visit_node(node, relmat);
+
+            if ((use_node_limit) && (node_count > node_limit))
+            {
+                std::cerr << "Node limit exhausted" << std::endl;
+                return false;
+            }
         }
         
         // Top node has the solution if we have not given up
         if (!use_giveup_threshold || node_stack.begin()->second->get_path_metric() > giveup_threshold)
         {
-            std::cout << "final: " << std::dec << node_stack.begin()->second->get_id() << ":" << node_stack.begin()->second->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
+            //std::cout << "final: " << std::dec << node_stack.begin()->second->get_id() << ":" << node_stack.begin()->second->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
             back_track(node_stack.begin()->second, decoded_message, true); // back track from terminal node to retrieve decoded message
             codeword_score = node_stack.begin()->first.path_metric; // the codeword score is the path metric
             return true;
@@ -293,7 +342,7 @@ protected:
             new_edge->set_p_destination(dest_node);
             node->add_outgoing_edge(new_edge); // add forward edge
             node_stack[NodeOrdering(forward_path_metric,node_count)] = dest_node;
-            std::cout << "->" << std::dec << node_count << ":" << forward_depth << " (" << (unsigned int) in_symbol << "," << (unsigned int) out_symbol << "): " << forward_path_metric << std::endl;
+            //std::cout << "->" << std::dec << node_count << ":" << forward_depth << " (" << (unsigned int) in_symbol << "," << (unsigned int) out_symbol << "): " << forward_path_metric << std::endl;
             node_count++;
         }
         
@@ -347,6 +396,8 @@ protected:
     std::map<NodeOrdering, CC_TreeNode<T_IOSymbol, T_Register>*, std::greater<NodeOrdering> > node_stack; //!< Ordered stack of nodes by decreasing path metric
     bool use_giveup_threshold; //!< True if a give up path metric threshold is used
     float giveup_threshold; //!< The give up path metric threshold
+    bool use_node_limit; //!< Stop above number of nodes threshold
+    unsigned int node_limit; //!< Number of nodes threshold
     float codeword_score; //!< Metric of the codeword found if any
     int cur_depth; //!< Current depth for the encoder
     unsigned int node_count; //!< Count of nodes in the code tree
