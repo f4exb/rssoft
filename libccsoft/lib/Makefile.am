@@ -10,6 +10,8 @@ library_include_HEADERS = \
 	ReliabilityMatrix.h \
 	CCSoft_Exception.h \
 	CC_Encoding.h \
+	CC_SequentialDecoding.h \
+	CC_FanoDecoding.h \
 	CC_StackDecoding.h \
 	CC_TreeEdge.h \
     CC_TreeNode.h \

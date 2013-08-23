@@ -24,6 +24,7 @@
 #include "ReliabilityMatrix.h"
 #include "CC_Encoding.h"
 #include "CC_StackDecoding.h"
+#include "CC_FanoDecoding.h"
 #include "CC_TreeNode.h"
 #include "CC_TreeEdge.h"
 #include "CCSoft_Exception.h"
@@ -36,6 +37,7 @@
 #include <sstream>
 #include <fstream>
 #include <cstring>
+#include <cctype> // for toupper
 
 static URandom ur; // Global random generator object
 
@@ -118,6 +120,12 @@ template<typename TDisplay, typename TElement, typename TStream> void print_vect
 struct Options
 {
 public:
+	typedef enum
+	{
+		Algorithm_Stack,
+		Algorithm_FanoLike
+	} Algorithm_type_t;
+
     Options() :
         make_noise(false),
         dot_output(false),
@@ -132,14 +140,18 @@ public:
         node_limit(0),
         use_node_limit(false),
         metric_limit(0.0),
-        use_metric_limit(false)
+        use_metric_limit(false),
+        algorithm_type(Algorithm_Stack),
+        fano_init_metric(-1.0),
+        fano_delta_metric(1.0),
+        edge_bias(0.0)
     {}
-    
+
     ~Options()
     {}
-    
+
     bool get_options(int argc, char *argv[]);
-        
+
     bool make_noise;
     bool dot_output;
     float snr_dB;
@@ -158,9 +170,14 @@ public:
     bool use_node_limit;
     float metric_limit;
     bool use_metric_limit;
+    Algorithm_type_t algorithm_type;
+    float fano_init_metric;
+    float fano_delta_metric;
+    float edge_bias;
 
 private:
     bool parse_generator_polys_data(std::string generator_polys_data_str);
+    bool parse_algorithm_type(std::string algorithm_type_str);
 };
 
 // ================================================================================================
@@ -176,9 +193,9 @@ bool Options::get_options(int argc, char *argv[])
             // these options set a flag
             {"print-seed", no_argument, &indicator_int, 1},
             // these options do not set a flag
-            {"snr", required_argument, 0, 'n'},        
-            {"verbosity", required_argument, 0, 'v'},              
-            {"dot-output", required_argument, 0, 'd'},              
+            {"snr", required_argument, 0, 'n'},
+            {"verbosity", required_argument, 0, 'v'},
+            {"dot-output", required_argument, 0, 'd'},
             {"k-constraints", required_argument, 0, 'k'},
             {"gen-polys", required_argument, 0, 'g'},
             {"in-symbols", required_argument, 0, 'i'},
@@ -186,11 +203,12 @@ bool Options::get_options(int argc, char *argv[])
             {"seed", required_argument, 0, 's'},
             {"node-limit", required_argument, 0, 'N'},
             {"metric-limit", required_argument, 0, 'M'},
-        };    
-        
+            {"algorithm-type", required_argument,0, 'a'},
+        };
+
         int option_index = 0;
-        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:s:N:M:", long_options, &option_index);
-        
+        c = getopt_long (argc, argv, "n:v:d:k:g:i:r:s:N:M:a:", long_options, &option_index);
+
         if (c == -1) // end of options
         {
             break;
@@ -240,10 +258,13 @@ bool Options::get_options(int argc, char *argv[])
                 status = extract_option<float, float>(metric_limit, 'M');
                 use_metric_limit = true;
                 break;
+            case 'a':
+                status = parse_algorithm_type(std::string(optarg));
+                break;
             case '?':
                 status = false;
                 break;
-        }    
+        }
     }
 }
 
@@ -251,18 +272,19 @@ bool Options::get_options(int argc, char *argv[])
 bool Options::parse_generator_polys_data(std::string generator_polys_data_str)
 {
     std::vector<std::string> g_strings;
-    
+
     if (!extract_vector(g_strings, ":", generator_polys_data_str))
     {
+    	std::cerr << "Invalid generator polynomials specification" << std::endl;
         return false;
     }
-    
+
     std::vector<std::string>::const_iterator gs_it = g_strings.begin();
-    
+
     for (; gs_it != g_strings.end(); ++gs_it)
     {
         std::vector<unsigned int> g;
-        
+
         if (extract_vector<unsigned int>(g, ",", *gs_it))
         {
             generator_polys.push_back(g);
@@ -272,8 +294,81 @@ bool Options::parse_generator_polys_data(std::string generator_polys_data_str)
             return false;
         }
     }
-    
+
     return true;
+}
+
+// ================================================================================================
+bool Options::parse_algorithm_type(std::string algorithm_type_str)
+{
+    std::vector<std::string> algo_strings;
+
+    if (!extract_vector(algo_strings, ":", algorithm_type_str))
+    {
+    	std::cerr << "Invalid algorithm specification" << std::endl;
+        return false;
+    }
+
+    std::transform(algo_strings[0].begin(), algo_strings[0].end(), algo_strings[0].begin(), toupper);
+
+	if (algo_strings[0] == "FANO")
+	{
+		if (algo_strings.size() > 1)
+		{
+			std::vector<float> fano_parms;
+
+			if (extract_vector(fano_parms, ",", algo_strings[1]))
+			{
+				if (fano_parms.size() > 0)
+				{
+					edge_bias = fano_parms[0];
+				}
+				if (fano_parms.size() > 1)
+				{
+					fano_init_metric = fano_parms[1];
+				}
+				if (fano_parms.size() > 2)
+				{
+					fano_delta_metric = fano_parms[2];
+				}
+			}
+			else
+			{
+				std::cerr << "Invalid Fano parameters specification" << std::endl;
+				return false;
+			}
+		}
+
+		algorithm_type = Algorithm_FanoLike;
+		return true;
+	}
+	else if (algo_strings[0] == "STACK")
+	{
+		if (algo_strings.size() > 1)
+		{
+			std::vector<float> stack_parms;
+
+			if (extract_vector(stack_parms, ",", algo_strings[1]))
+			{
+				if (stack_parms.size() > 0)
+				{
+					edge_bias = stack_parms[0];
+				}
+			}
+			else
+			{
+				std::cerr << "Invalid Stack parameters specification" << std::endl;
+				return false;
+			}
+		}
+
+		algorithm_type = Algorithm_Stack;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 // ================================================================================================
@@ -304,24 +399,44 @@ void create_symbol_data(float *symbol_data,
 int main(int argc, char *argv[])
 {
     Options options;
-    
+    bool success = false;
+
     if (options.get_options(argc, argv))
     {
+        ccsoft::CC_SequentialDecoding<unsigned int, unsigned int> *cc_decoding;
+    
         try
         {
-            ccsoft::CC_StackDecoding<unsigned int, unsigned int> cc_decoding(options.k_constraints, options.generator_polys);
-            cc_decoding.get_encoding().print(std::cout);
-            unsigned int out_symbols_nb = 1<<cc_decoding.get_encoding().get_n();
-            unsigned int in_symbols_nb = 1<<cc_decoding.get_encoding().get_k();
+            if (options.algorithm_type == Options::Algorithm_Stack)
+            {
+                cc_decoding = new ccsoft::CC_StackDecoding<unsigned int, unsigned int>(options.k_constraints, options.generator_polys);
+            }
+            else if (options.algorithm_type == Options::Algorithm_FanoLike)
+            {
+                cc_decoding = new ccsoft::CC_FanoDecoding<unsigned int, unsigned int>(options.k_constraints, 
+                        options.generator_polys,
+                        options.fano_init_metric,
+                        options.fano_delta_metric);
+            }
+            else
+            {
+                std::cerr << "Unrecognized algorithm type" << std::endl;
+                return 1;
+            }
+             
+            cc_decoding->set_edge_bias(options.edge_bias); 
+            cc_decoding->get_encoding().print(std::cout);
+            unsigned int out_symbols_nb = 1<<cc_decoding->get_encoding().get_n();
+            unsigned int in_symbols_nb = 1<<cc_decoding->get_encoding().get_k();
 
             if (options.use_node_limit)
             {
-                cc_decoding.set_node_limit(options.node_limit);
+                cc_decoding->set_node_limit(options.node_limit);
             }
 
             if (options.use_metric_limit)
             {
-                cc_decoding.set_metric_limit(options.metric_limit);
+                cc_decoding->set_metric_limit(options.metric_limit);
             }
 
             if (options.has_seed)
@@ -345,16 +460,16 @@ int main(int argc, char *argv[])
                     options.input_symbols.push_back(ur.rand_int(in_symbols_nb));
                 }
             }
-            
+
             if (options.input_symbols.size() > 0)
             {
-                for (unsigned int i=0; i<cc_decoding.get_encoding().get_m()-1; i++)
+                for (unsigned int i=0; i<cc_decoding->get_encoding().get_m()-1; i++)
                 {
                     options.input_symbols.push_back(0);
                 }
-                
-                ccsoft::ReliabilityMatrix relmat(cc_decoding.get_encoding().get_n(), options.input_symbols.size());
-                unsigned int nb_symbols = 1<<cc_decoding.get_encoding().get_n();
+
+                ccsoft::ReliabilityMatrix relmat(cc_decoding->get_encoding().get_n(), options.input_symbols.size());
+                unsigned int nb_symbols = 1<<cc_decoding->get_encoding().get_n();
                 float *symbol_data = new float[nb_symbols];
 
                 std::ostringstream oos;
@@ -362,7 +477,7 @@ int main(int argc, char *argv[])
                 for (unsigned int i=0; i<options.input_symbols.size(); i++)
                 {
                     unsigned int out_symbol;
-                    cc_decoding.get_encoding().encode(options.input_symbols[i], out_symbol);
+                    cc_decoding->get_encoding().encode(options.input_symbols[i], out_symbol);
                     create_symbol_data(symbol_data, nb_symbols, out_symbol, options.snr_dB, options.make_noise);
                     relmat.enter_symbol_data(symbol_data);
                     std::cout << options.input_symbols[i] << " ";
@@ -376,12 +491,14 @@ int main(int argc, char *argv[])
                 relmat.normalize();
                 std::vector<unsigned int> result;
 
-                if (cc_decoding.decode(relmat, result))
+                if (cc_decoding->decode(relmat, result))
                 {
                     print_vector<unsigned int>(result, std::cout);
                     std::cout << " ";
 
-                    if (result == options.input_symbols)
+                    success = (result == options.input_symbols);
+                    
+                    if (success)
                     {
                         std::cout << "Success!" << std::endl;
                     }
@@ -394,7 +511,7 @@ int main(int argc, char *argv[])
                     {
                         std::ofstream dot_file;
                         dot_file.open(options.dot_filename.c_str());
-                        cc_decoding.print_dot(dot_file);
+                        cc_decoding->print_dot(dot_file);
                         dot_file.close();
                     }
                 }
@@ -402,11 +519,8 @@ int main(int argc, char *argv[])
                 {
                     std::cout << "Message cannot be decoded" << std::endl;
                 }
-
-                std::cout << "score = " << cc_decoding.get_score()
-                        << " stack_score = " << cc_decoding.get_stack_score()
-                        << " #nodes = " << cc_decoding.get_nb_nodes()
-                        << " stack_size = " << cc_decoding.get_stack_size() << std::endl;
+                
+                cc_decoding->print_stats(std::cout, success);
             }
         }
         catch (ccsoft::CCSoft_Exception& e)
@@ -419,6 +533,6 @@ int main(int argc, char *argv[])
         std::cout << "Wrong options" << std::endl;
         return -1;
     }
-    
+
     return 0;
 }

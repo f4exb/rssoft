@@ -26,15 +26,20 @@
 namespace ccsoft
 {
 
-template<typename T_IOSymbol, typename T_Register>
+class CC_TreeEdgeTag_Empty
+{
+};
+
+template<typename T_IOSymbol, typename T_Register, typename T_EdgeTag>
 class CC_TreeNode;
 
 /**
  * \brief An edge of the code tree
  * \tparam T_IOSymbol Type of the input and output symbols
  * \tparam T_Register Type of the encoder internal registers
+ * \tparam T_Register Type of the edge tag
  */
-template<typename T_IOSymbol, typename T_Register>
+template<typename T_IOSymbol, typename T_Register, typename T_EdgeTag>
 class CC_TreeEdge
 {
 public:
@@ -50,7 +55,7 @@ public:
             const T_IOSymbol& _in_symbol,
             const T_IOSymbol& _out_symbol,
             float _metric,
-            CC_TreeNode<T_IOSymbol, T_Register> *_p_origin) :
+            CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *_p_origin) :
                 id(_id),
                 in_symbol(_in_symbol),
                 out_symbol(_out_symbol),
@@ -74,7 +79,7 @@ public:
     /** 
      * Edge node destination setter
      */
-    void set_p_destination(CC_TreeNode<T_IOSymbol, T_Register> *_p_destination)
+    void set_p_destination(CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *_p_destination)
     {
         p_destination = _p_destination;
     }
@@ -106,7 +111,7 @@ public:
     /**
      * Origin pointer getter
      */
-    CC_TreeNode<T_IOSymbol, T_Register> *get_p_origin()
+    CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *get_p_origin()
     {
         return p_origin;
     }
@@ -114,9 +119,25 @@ public:
     /**
      * Destination pointer getter
      */
-    CC_TreeNode<T_IOSymbol, T_Register> *get_p_destination()
+    CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *get_p_destination()
     {
         return p_destination;
+    }
+    
+    /**
+     * R/O reference to edge tag
+     */
+    const T_EdgeTag& get_edge_tag() const
+    {
+        return edge_tag;
+    }
+
+    /**
+     * R/W reference to edge tag
+     */
+    T_EdgeTag& get_edge_tag()
+    {
+        return edge_tag;
     }
 
 protected:
@@ -124,8 +145,9 @@ protected:
     T_IOSymbol in_symbol; //!< Input symbol corresponding to the edge
     T_IOSymbol out_symbol; //!< Output symbol corresponding to the edge
     float metric; //!< Metric of the edge
-    CC_TreeNode<T_IOSymbol, T_Register> *p_origin; //!< Pointer to the edge origin node
-    CC_TreeNode<T_IOSymbol, T_Register> *p_destination; //!< Pointer to the edge destination node
+    CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *p_origin; //!< Pointer to the edge origin node
+    CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *p_destination; //!< Pointer to the edge destination node
+    T_EdgeTag edge_tag; //!< Optional and versatile class to tag the edge
 };
 
 } // namespace ccsoft

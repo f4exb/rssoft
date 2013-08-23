@@ -196,15 +196,15 @@ public:
 // ================================================================================================
 std::ostream& operator<<(std::ostream& os, const StatOutput& st)
 {
-	os << st.snr_dB << ","
+	os << st.found << ","
+        << st.nb_iterations << ","
+        << st.result_order_when_found << ","
+        << st.nb_results_when_found << ","
 		<< st.codeword_average_score << ","
 		<< st.nb_hard_errors << ","
 		<< st.nb_erasures << ","
-		<< st.found << ","
-		<< st.nb_results_when_found << ","
-		<< st.result_order_when_found << ","
-		<< st.nb_iterations << ","
 		<< st.nb_false_results << ","
+        << st.snr_dB << ","
 		<< st.max_multiplicity << ","
 		<< st.max_matrix_cost;
 	return os;
@@ -324,12 +324,6 @@ bool Options::get_options(int argc, char *argv[])
             status = false;
         }
 
-        if (global_multiplicity < n)
-        {
-        	std::cout << "Global multiplicity must be at least " << n << std::endl;
-        	status = false;
-        }
-        
         if (nb_erasures > n-2)
         {
             std::cout << "The number of erasures (" << nb_erasures << ") cannot exceed the number of symbols - 2 (" << n-2 << ")" << std::endl;
@@ -676,7 +670,8 @@ int main(int argc, char *argv[])
 				stat_output.max_multiplicity = global_multiplicity;
 			}
 
-			global_multiplicity = mm_cost;
+			//global_multiplicity = mm_cost;
+			global_multiplicity++;
 			stat_output.nb_iterations = ni;
 			gskv.init();
 			rr.init();
@@ -685,7 +680,7 @@ int main(int argc, char *argv[])
         if (options.print_stats)
         {
             std::cout << std::endl;
-        	std::cout << "#RES: " << stat_output << std::endl;
+        	std::cout << "_RES " << stat_output << std::endl;
         }
 
         return 0;

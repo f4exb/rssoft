@@ -33,7 +33,7 @@
  
  namespace ccsoft
  {
-    template<typename T_IOSymbol, typename T_Register>
+    template<typename T_IOSymbol, typename T_Register, typename T_EdgeTag>
     class CC_TreeGraphviz
     {
     public:
@@ -42,10 +42,10 @@
          * \param root_node Root node of the coding tree
          * \param os Output stream
          */
-        static void create_dot(CC_TreeNode<T_IOSymbol, T_Register> *root_node, std::ostream& os)
+        static void create_dot(CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *root_node, std::ostream& os)
         {
-            std::vector<CC_TreeNode<T_IOSymbol, T_Register>*> nodes;
-            std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*> edges;
+            std::vector<CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>*> nodes;
+            std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*> edges;
             
             explore_node(root_node, nodes, edges);
             print_dot(nodes, edges, os);
@@ -58,13 +58,13 @@
          * \param nodes Vector of all nodes
          * \param edges Vector of all edges
          */
-        static void explore_node(CC_TreeNode<T_IOSymbol, T_Register> *node,
-            std::vector<CC_TreeNode<T_IOSymbol, T_Register>*>& nodes,
-            std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*>& edges)
+        static void explore_node(CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *node,
+            std::vector<CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>*>& nodes,
+            std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>& edges)
         {
             nodes.push_back(node);
-            const std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*>& outgoing_edges = node->get_outgoing_edges();
-            typename std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*>::const_iterator e_it = outgoing_edges.begin();
+            const std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>& outgoing_edges = node->get_outgoing_edges();
+            typename std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>::const_iterator e_it = outgoing_edges.begin();
             
             for (; e_it != outgoing_edges.end(); ++e_it)
             {
@@ -79,14 +79,14 @@
          * \param edges Vector of all edges
          * \param os Output stream
          */
-        static void print_dot(std::vector<CC_TreeNode<T_IOSymbol, T_Register>*>& nodes,
-            std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*>& edges,
+        static void print_dot(std::vector<CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>*>& nodes,
+            std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>& edges,
             std::ostream& os)
         {
             os << "digraph G {" << std::endl;
             os << "    rankdir=LR" << std::endl << std::endl;
             
-            typename std::vector<CC_TreeNode<T_IOSymbol, T_Register>*>::const_iterator n_it = nodes.begin();
+            typename std::vector<CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>*>::const_iterator n_it = nodes.begin();
             
             for (; n_it != nodes.end(); ++n_it)
             {
@@ -100,7 +100,7 @@
                 os  << "]" << std::endl;
             }
             
-            typename std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*>::const_iterator e_it = edges.begin();
+            typename std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>::const_iterator e_it = edges.begin();
             os << std::endl;
             
             for (; e_it != edges.end(); ++e_it)

@@ -17,13 +17,14 @@
  along with this program; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Boston, MA  02110-1301  USA
 
- Convolutional soft-decision decoder based on the stack or Zigangirov-Jelinek 
+ Convolutional soft-decision decoder based on the stack or Zigangirov-Jelinek
  (ZJ) algorithm
 
  */
 #ifndef __CC_STACK_DECODING_H__
 #define __CC_STACK_DECODING_H__
 
+#include "CC_SequentialDecoding.h"
 #include "CC_Encoding.h"
 #include "CCSoft_Exception.h"
 #include "CC_TreeEdge.h"
@@ -34,46 +35,11 @@
 #include <cmath>
 #include <map>
 #include <algorithm>
+#include <iostream>
 
 
 namespace ccsoft
 {
-
-float log2(float x)
-{
-    return log(x)/log(2.0);
-}
-
-/**
- * \brief class used for node ordering in the stack map
- */
-class NodeOrdering
-{
-public:
-    NodeOrdering(float _path_metric, unsigned int _node_id) :
-        path_metric(_path_metric),
-        node_id(_node_id)
-    {}
-
-    ~NodeOrdering()
-    {}
-
-    bool operator>(const NodeOrdering& other) const
-    {
-        if (path_metric == other.path_metric)
-        {
-            return node_id > other.node_id;
-        }
-        else
-        {
-            return path_metric > other.path_metric;
-        }
-    }
-
-    float path_metric;
-    unsigned int node_id;
-};
-
 
 /**
  * \brief The Stack Decoding class
@@ -81,7 +47,7 @@ public:
  * \tparam T_IOSymbol Type of the input and output symbols
  */
 template<typename T_Register, typename T_IOSymbol>
-class CC_StackDecoding
+class CC_StackDecoding : public CC_SequentialDecoding<T_Register, T_IOSymbol>, public CC_SequentialDecodingInternal<T_Register, T_IOSymbol, CC_TreeEdgeTag_Empty>
 {
 public:
     /**
@@ -95,122 +61,26 @@ public:
      */
     CC_StackDecoding(const std::vector<unsigned int>& constraints,
             const std::vector<std::vector<T_Register> >& genpoly_representations) :
-                encoding(constraints, genpoly_representations),
-                root_node(0),
-                use_metric_limit(false),
-                metric_limit(0.0),
-                use_node_limit(false),
-                node_limit(0),
-                codeword_score(0.0),
-                cur_depth(-1),
-                node_count(0),
-                edge_count(0),
-                tail_zeros(true)
+                CC_SequentialDecoding<T_Register, T_IOSymbol>(constraints, genpoly_representations),
+                CC_SequentialDecodingInternal<T_Register, T_IOSymbol, CC_TreeEdgeTag_Empty>()
     {}
 
     /**
      * Destructor. Does a final garbage collection
      */
-    CC_StackDecoding()
-    {
-        reset();
-    }
-    
-    /**
-     * Set the give up threshold
-     * \param _giveup_threshold Metric above which the process continues
-     */
-    void set_giveup_threshold(float _giveup_threshold)
-    {
-        metric_limit = _giveup_threshold;
-        use_metric_limit = true;
-    }
-    
-    /** 
-     * Reset give up threshold. The process will continue until the end of the tree.
-     */
-    void reset_giveup_threshold()
-    {
-        use_metric_limit = false;
-    }
-
-    /**
-     * Set the node limit threshold
-     */
-    void set_node_limit(unsigned int _node_limit)
-    {
-        node_limit = _node_limit;
-        use_node_limit = true;
-    }
-
-    /**
-     * Reset the node limit threshold. The process will continue until out of memory or end of the tree.
-     */
-    void reset_node_limit()
-    {
-        use_node_limit = false;
-    }
-
-    /**
-     * Set the metric limit threshold
-     */
-    void set_metric_limit(float _metric_limit)
-    {
-        metric_limit = _metric_limit;
-        use_metric_limit = true;
-    }
-
-    /**
-     * Reset the metric limit threshold. The process will continue until out of memory or end of the tree.
-     */
-    void reset_metric_limit()
-    {
-        use_metric_limit = false;
-    }
-
-    /**
-     * Set the tail zeros option
-     */
-    void set_tail_zeros(bool _tail_zeros)
-    {
-        tail_zeros = _tail_zeros;
-    }
+    virtual ~CC_StackDecoding()
+    {}
 
     /**
      * Reset the decoding process
      */
     void reset()
     {
-        if (root_node)
-        {
-            delete root_node;
-            node_stack.clear();
-            root_node = 0;
-        }
-        
-        node_count = 0;
-        edge_count = 0;
-        codeword_score = 0.0;
-        cur_depth = -1;
-        encoding.clear(); // clear encoder's registers
+        ParentInternal::reset();
+        Parent::reset();
+        node_stack.clear();
     }
 
-    /**
-     * Get encoding object reference
-     */
-    CC_Encoding<T_Register, T_IOSymbol>& get_encoding()
-    {
-        return encoding;
-    }
-    
-    /**
-     * Get the codeword score. Valid only if decode returned successfully.
-     */
-    float get_score() const
-    {
-        return codeword_score;
-    }
-    
     /**
      * Get the score at the top of the stack. Valid anytime the process has started (stack not empty).
      */
@@ -220,89 +90,56 @@ public:
     }
 
     /**
-     * Get the codeword score in dB/Symbol units. Valid only if decode returned successfully.
-     */     
-    float get_score_db_sym() const
-    {
-        if (cur_depth > 0)
-        {
-            return (10.0*log(2.0)*codeword_score) / cur_depth;
-        }
-        else
-        {
-            return 0.0;
-        }
-    }
-    
-    /**
-     * Get the number of nodes created minus root node
-     */
-    unsigned int get_nb_nodes() const
-    {
-        return node_count;
-    }
-
-    /**
      * Get the stack size
      */
     unsigned int get_stack_size() const
     {
         return node_stack.size();
     }
-
-    /**
-     * Print the dot (Graphviz) file of the current decode tree to an output stream
-     * \param os Output stream
-     */
-    void print_dot(std::ostream& os)
-    {
-        if (root_node)
-        {
-            CC_TreeGraphviz<T_IOSymbol, T_Register>::create_dot(root_node, os);
-        }
-    }
-
+    
     /**
      * Decodes given the reliability matrix
-     * \parm relmat Reference to the reliability matrix
-     * \parm decoded_message Vector of symbols of retrieved message
+     * \param relmat Reference to the reliability matrix
+     * \param decoded_message Vector of symbols of retrieved message
      */
-    bool decode(const ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message)
+    virtual bool decode(const ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message)
     {
-        if (relmat.get_message_length() < encoding.get_m())
+        if (relmat.get_message_length() < Parent::encoding.get_m())
         {
             throw CCSoft_Exception("Reliability Matrix should have a number of columns at least equal to the code constraint");
         }
 
-        if (relmat.get_nb_symbols_log2() != encoding.get_n())
+        if (relmat.get_nb_symbols_log2() != Parent::encoding.get_n())
         {
             throw CCSoft_Exception("Reliability Matrix is not compatible with code output symbol size");
         }
 
         reset();
-        init_root(relmat); // initialize with root node
-        
+        ParentInternal::init_root(relmat); // initialize the root node
+        Parent::node_count++;
+        visit_node_forward(ParentInternal::root_node, relmat); // visit the root node
+
         // loop until we get to a terminal node or the metric limit is encountered hence the stack is empty
         while ((node_stack.size() > 0)
             && (node_stack.begin()->second->get_depth() < relmat.get_message_length() - 1))
         {
-            CC_TreeNode<T_IOSymbol, T_Register>* node = node_stack.begin()->second;
+            StackNode* node = node_stack.begin()->second;
             //std::cout << std::dec << node->get_id() << ":" << node->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
-            visit_node(node, relmat);
+            visit_node_forward(node, relmat);
 
-            if ((use_node_limit) && (node_count > node_limit))
+            if ((Parent::use_node_limit) && (Parent::node_count > Parent::node_limit))
             {
                 std::cerr << "Node limit exhausted" << std::endl;
                 return false;
             }
         }
-        
+
         // Top node has the solution if we have not given up
-        if (!use_metric_limit || node_stack.size() != 0)
+        if (!Parent::use_metric_limit || node_stack.size() != 0)
         {
             //std::cout << "final: " << std::dec << node_stack.begin()->second->get_id() << ":" << node_stack.begin()->second->get_depth() << ":" << node_stack.begin()->first.path_metric << std::endl;
-            back_track(node_stack.begin()->second, decoded_message, true); // back track from terminal node to retrieve decoded message
-            codeword_score = node_stack.begin()->first.path_metric; // the codeword score is the path metric
+            ParentInternal::back_track(node_stack.begin()->second, decoded_message, true); // back track from terminal node to retrieve decoded message
+            Parent::codeword_score = node_stack.begin()->first.path_metric; // the codeword score is the path metric
             return true;
         }
         else
@@ -311,23 +148,48 @@ public:
             return false; // no solution
         }
     }
+    
+    /**
+     * Print stats to an output stream
+     * \param os Output stream
+     * \param success True if decoding was successful
+     */
+    virtual void print_stats(std::ostream& os, bool success)
+    {
+        std::cout << "score = " << Parent::get_score()
+                << " stack_score = " << get_stack_score()
+                << " #nodes = " << Parent::get_nb_nodes()
+                << " stack_size = " << get_stack_size()
+                << " max depth = " << Parent::get_max_depth() << std::endl;
+        std::cout << "_RES " << (success ? 1 : 0) << ","
+                << Parent::get_score() << ","
+                << get_stack_score() << ","
+                << Parent::get_nb_nodes() << ","
+                << get_stack_size() << ","
+                << Parent::get_max_depth() << std::endl;
+    }
+    
+    /**
+     * Print the dot (Graphviz) file of the current decode tree to an output stream
+     * \param os Output stream
+     */
+    virtual void print_dot(std::ostream& os)
+    {
+        ParentInternal::print_dot_internal(os);
+    }
 
 protected:
-    /**
-     * Initialize process at the root node
-     */
-    void init_root(const ReliabilityMatrix& relmat)
-    {
-        root_node = new CC_TreeNode<T_IOSymbol, T_Register>(node_count++, 0, 0.0, -1);
-        visit_node(root_node, relmat);
-    }
+    typedef CC_SequentialDecoding<T_Register, T_IOSymbol> Parent;                                       //!< Parent class this class inherits from
+    typedef CC_SequentialDecodingInternal<T_Register, T_IOSymbol, CC_TreeEdgeTag_Empty> ParentInternal; //!< Parent class this class inherits from
+    typedef CC_TreeNode<T_IOSymbol, T_Register, CC_TreeEdgeTag_Empty> StackNode; //!< Class of code tree nodes in the stack algorithm
+    typedef CC_TreeEdge<T_IOSymbol, T_Register, CC_TreeEdgeTag_Empty> StackEdge; //!< Class of code tree edges in the stack algorithm
 
     /**
      * Visit a new node
      * \node Node to visit
      * \relmat Reliability matrix being used
      */
-    void visit_node(CC_TreeNode<T_IOSymbol, T_Register>* node, const ReliabilityMatrix& relmat)
+    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, CC_TreeEdgeTag_Empty>* node, const ReliabilityMatrix& relmat)
     {
         int forward_depth = node->get_depth() + 1;
         T_IOSymbol out_symbol;
@@ -336,72 +198,58 @@ protected:
         // return encoder to appropriate state
         if (node->get_depth() >= 0) // does not concern the root node
         {
-            encoding.set_registers(node->get_registers());
+            Parent::encoding.set_registers(node->get_registers());
         }
 
-        if ((tail_zeros) && (forward_depth > relmat.get_message_length()-encoding.get_m()))
+        if ((Parent::tail_zeros) && (forward_depth > relmat.get_message_length()-Parent::encoding.get_m()))
         {
             end_symbol = 1; // if zero tail option assume tail symbols are all zeros
         }
         else
         {
-            end_symbol = (1<<encoding.get_k()); // full scan all possible input symbols
+            end_symbol = (1<<Parent::encoding.get_k()); // full scan all possible input symbols
         }
 
         // loop through assumption for this symbol place
         for (T_IOSymbol in_symbol = 0; in_symbol < end_symbol; in_symbol++)
         {
-            encoding.encode(in_symbol, out_symbol, in_symbol > 0); // step only for a new symbol place
-            float edge_metric = log2(relmat(out_symbol, forward_depth));
+            Parent::encoding.encode(in_symbol, out_symbol, in_symbol > 0); // step only for a new symbol place
+            float edge_metric = log2(relmat(out_symbol, forward_depth)) - Parent::edge_bias;
+            
             float forward_path_metric = edge_metric + node->get_path_metric();
-            if ((!use_metric_limit) || (forward_path_metric > metric_limit))
+            if ((!Parent::use_metric_limit) || (forward_path_metric > Parent::metric_limit))
             {
-                CC_TreeEdge<T_IOSymbol, T_Register> *new_edge = new CC_TreeEdge<T_IOSymbol, T_Register>(edge_count++, in_symbol, out_symbol, edge_metric, node);
-                CC_TreeNode<T_IOSymbol, T_Register> *dest_node = new CC_TreeNode<T_IOSymbol, T_Register>(node_count, new_edge, forward_path_metric, forward_depth);
-                dest_node->set_registers(encoding.get_registers());
+                StackEdge *new_edge = new StackEdge(Parent::edge_count++, in_symbol, out_symbol, edge_metric, node);
+                StackNode *dest_node = new StackNode(Parent::node_count, new_edge, forward_path_metric, forward_depth);
+                dest_node->set_registers(Parent::encoding.get_registers());
                 new_edge->set_p_destination(dest_node);
                 node->add_outgoing_edge(new_edge); // add forward edge
-                node_stack[NodeOrdering(forward_path_metric,node_count)] = dest_node;
+                node_stack[NodeOrdering(forward_path_metric, Parent::node_count)] = dest_node;
                 //std::cout << "->" << std::dec << node_count << ":" << forward_depth << " (" << (unsigned int) in_symbol << "," << (unsigned int) out_symbol << "): " << forward_path_metric << std::endl;
-                node_count++;
+                Parent::node_count++;
             }
         }
-        
-        cur_depth = forward_depth; // new encoder position
+
+        Parent::cur_depth = forward_depth; // new encoder position
+
+        if (Parent::cur_depth > Parent::max_depth)
+        {
+        	Parent::max_depth = Parent::cur_depth;
+        }
 
         if (node->get_depth() >= 0)
         {
             remove_node_from_stack(node); // remove current node from the stack unless it is the root node which is not in the stack
         }
     }
-    
-    /**
-     * Back track from terminal node to retrieve decoded message
-     */
-    void back_track(CC_TreeNode<T_IOSymbol, T_Register>* node, std::vector<T_IOSymbol>& decoded_message, bool mark_nodes = false)
-    {
-        std::vector<T_IOSymbol> reversed_message;
-        CC_TreeNode<T_IOSymbol, T_Register> *cur_node = node;
-        CC_TreeEdge<T_IOSymbol, T_Register> *incoming_edge;
 
-        while (incoming_edge = (cur_node->get_incoming_edge()))
-        {
-            cur_node->set_on_final_path(mark_nodes);
-            reversed_message.push_back(incoming_edge->get_in_symbol());
-            cur_node = incoming_edge->get_p_origin();
-        }
-        
-        decoded_message.resize(reversed_message.size());
-        std::reverse_copy(reversed_message.begin(), reversed_message.end(), decoded_message.begin());
-    }
-    
-    /** 
+    /**
      * Removes a node from the stack map. Does a full scan but usually the nodes to be removed are on the top of the stack (i.e. beginning of the map).
      */
-    void remove_node_from_stack(CC_TreeNode<T_IOSymbol, T_Register>* node)
+    void remove_node_from_stack(StackNode* node)
     {
-        typename std::map<NodeOrdering, CC_TreeNode<T_IOSymbol, T_Register>*, std::greater<NodeOrdering> >::iterator stack_it = node_stack.begin();
-        
+        typename std::map<NodeOrdering, StackNode*, std::greater<NodeOrdering> >::iterator stack_it = node_stack.begin();
+
         for (; stack_it != node_stack.end(); ++stack_it)
         {
             if (node == stack_it->second)
@@ -411,19 +259,8 @@ protected:
             }
         }
     }
-
-    CC_Encoding<T_Register, T_IOSymbol> encoding; //!< Convolutional encoding object
-    CC_TreeNode<T_IOSymbol, T_Register> *root_node; //!< Root node
-    std::map<NodeOrdering, CC_TreeNode<T_IOSymbol, T_Register>*, std::greater<NodeOrdering> > node_stack; //!< Ordered stack of nodes by decreasing path metric
-    bool use_metric_limit; //!< True if a give up path metric threshold is used
-    float metric_limit; //!< The give up path metric threshold
-    bool use_node_limit; //!< Stop above number of nodes threshold
-    unsigned int node_limit; //!< Number of nodes threshold
-    float codeword_score; //!< Metric of the codeword found if any
-    int cur_depth; //!< Current depth for the encoder
-    unsigned int node_count; //!< Count of nodes in the code tree
-    unsigned int edge_count; //!< Count of edges in the code tree
-    bool tail_zeros; //!< True if tail of m-1 zeros in the message are assumed. This is the default option.
+    
+    std::map<NodeOrdering, StackNode*, std::greater<NodeOrdering> > node_stack; //!< Ordered stack of nodes by decreasing path metric
 };
 
 } // namespace ccsoft

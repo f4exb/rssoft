@@ -29,7 +29,7 @@
 namespace ccsoft
 {
 
-template<typename T_IOSymbol, typename T_Register>
+template<typename T_IOSymbol, typename T_Register, typename T_EdgeTag>
 class CC_TreeEdge;
 
 /**
@@ -37,7 +37,7 @@ class CC_TreeEdge;
  * \tparam T_IOSymbol Type of the input and output symbols
  * \tparam T_Register Type of the encoder internal registers
  */
-template<typename T_IOSymbol, typename T_Register>
+template<typename T_IOSymbol, typename T_Register, typename T_EdgeTag>
 class CC_TreeNode
 {
 public:
@@ -49,7 +49,7 @@ public:
      * \param _depth This node depth
      */
     CC_TreeNode(unsigned int _id,
-            CC_TreeEdge<T_IOSymbol, T_Register> *_p_incoming_edge,
+            CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag> *_p_incoming_edge,
             float _path_metric,
             int _depth) :
                 id(_id),
@@ -64,7 +64,7 @@ public:
      */
     ~CC_TreeNode()
     {
-        typename std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*>::iterator e_it = p_outgoing_edges.begin();
+        typename std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>::iterator e_it = p_outgoing_edges.begin();
     
         for (; e_it != p_outgoing_edges.end(); ++e_it)
         {
@@ -79,15 +79,23 @@ public:
     /**
      * Add an outgoing edge
      */
-    void add_outgoing_edge(CC_TreeEdge<T_IOSymbol, T_Register> *p_outgoing_edge)
+    void add_outgoing_edge(CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag> *p_outgoing_edge)
     {
         p_outgoing_edges.push_back(p_outgoing_edge);
     }
 
     /**
-     * Return a reference to the outgoing edges
+     * Return a R/O reference to the outgoing edges
      */
-    const std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*>& get_outgoing_edges() const
+    const std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>& get_outgoing_edges() const
+    {
+        return p_outgoing_edges;
+    }
+    
+    /**
+     * Return a R/W reference to the outgoing edges
+     */
+    std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>& get_outgoing_edges() 
     {
         return p_outgoing_edges;
     }
@@ -95,7 +103,7 @@ public:
     /**
      * Get pointer to the incoming edge
      */
-    CC_TreeEdge<T_IOSymbol, T_Register> *get_incoming_edge()
+    CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag> *get_incoming_edge()
     {
         return p_incoming_edge;
     }
@@ -127,7 +135,7 @@ public:
     /**
      * For ordering by increasing path metric
      */
-    bool operator<(const CC_TreeNode<T_IOSymbol, T_Register>& other) const
+    bool operator<(const CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>& other) const
     {
         return path_metric < other.path_metric;
     }
@@ -135,7 +143,7 @@ public:
     /**
      * For ordering by decreasing path metric
      */
-    bool operator>(const CC_TreeNode<T_IOSymbol, T_Register>& other) const
+    bool operator>(const CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>& other) const
     {
         return path_metric > other.path_metric;
     }
@@ -171,11 +179,41 @@ public:
     {
         return on_final_path;
     }
+    
+    /**
+     * Ordering - lesser
+     */
+    bool operator<(const CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>& other)
+    {
+        if (path_metric == other.path_metric)
+        {
+            return id < other.id;
+        }
+        else
+        {
+            return path_metric < other.path_metric;
+        }
+    }
+
+    /**
+     * Ordering - greater
+     */
+    bool operator>(const CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>& other)
+    {
+        if (path_metric == other.path_metric)
+        {
+            return id > other.id;
+        }
+        else
+        {
+            return path_metric > other.path_metric;
+        }
+    }
 
 protected:
     unsigned int id; //!< Node's unique ID
-    std::vector<CC_TreeEdge<T_IOSymbol, T_Register>*> p_outgoing_edges; //!< Outgoing edges pointers
-    CC_TreeEdge<T_IOSymbol, T_Register> *p_incoming_edge; //!< Pointer to the incoming edge
+    std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*> p_outgoing_edges; //!< Outgoing edges pointers
+    CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag> *p_incoming_edge; //!< Pointer to the incoming edge
     float path_metric; //!< Path metric to the node
     int depth; //!< Depth of node in the tree: 0 = root
     std::vector<T_Register> registers; //!< state of encoder registers at node
