@@ -15,4 +15,5 @@ library_include_HEADERS = \
 	CC_StackDecoding.h \
 	CC_TreeEdge.h \
     CC_TreeNode.h \
-    CC_TreeGraphviz.h
+    CC_TreeGraphviz.h \
+    Debug.h

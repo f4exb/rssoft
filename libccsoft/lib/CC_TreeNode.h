@@ -64,6 +64,22 @@ public:
      */
     ~CC_TreeNode()
     {
+        delete_outgoing_edges();
+    }
+
+    /**
+     * Add an outgoing edge
+     */
+    void add_outgoing_edge(CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag> *p_outgoing_edge)
+    {
+        p_outgoing_edges.push_back(p_outgoing_edge);
+    }
+
+    /**
+     * Delete outgoing edges
+     */
+    void delete_outgoing_edges()
+    {
         typename std::vector<CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag>*>::iterator e_it = p_outgoing_edges.begin();
     
         for (; e_it != p_outgoing_edges.end(); ++e_it)
@@ -74,14 +90,8 @@ public:
                 *e_it = 0;
             }
         }
-    }
 
-    /**
-     * Add an outgoing edge
-     */
-    void add_outgoing_edge(CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag> *p_outgoing_edge)
-    {
-        p_outgoing_edges.push_back(p_outgoing_edge);
+        p_outgoing_edges.clear();
     }
 
     /**

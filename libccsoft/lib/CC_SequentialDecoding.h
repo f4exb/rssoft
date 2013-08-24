@@ -120,7 +120,8 @@ public:
                 node_count(0),
                 edge_count(0),
                 tail_zeros(true),
-                edge_bias(0.0)
+                edge_bias(0.0),
+                verbosity(0)
 	{}
 
 	/**
@@ -249,6 +250,14 @@ public:
     }
 
     /**
+     * Set verbosity level
+     */
+    void set_verbosity(unsigned int _verbosity)
+    {
+        verbosity = _verbosity;
+    }
+
+    /**
      * Print the dot (Graphviz) file of the current decode tree to an output stream
      * \param os Output stream
      */
@@ -281,6 +290,7 @@ protected:
     unsigned int edge_count;  //!< Count of edges in the code tree
     bool tail_zeros;          //!< True if tail of m-1 zeros in the message are assumed. This is the default option.
     float edge_bias;          //!< Edge metric bias subtracted from log2 of reliability of the edge
+    unsigned int verbosity;   //!< Verbosity level
 };
 
 /**

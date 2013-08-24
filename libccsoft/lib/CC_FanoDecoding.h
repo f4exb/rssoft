@@ -32,6 +32,7 @@
 #include "CC_TreeNode.h"
 #include "ReliabilityMatrix.h"
 #include "CC_TreeGraphviz.h"
+#include "Debug.h"
 
 #include <cmath>
 #include <algorithm>
@@ -58,11 +59,13 @@ public:
      * of generators should follow the same convention.
      * \param _init_threshold Initial path metric threshold
      * \param _delta_threshold Delta of path metric that is applied when lowering threshold
+     * \param _tree_cache_size Tree cache maximum size in number of nodes (0 if not used)
      */
 	CC_FanoDecoding(const std::vector<unsigned int>& constraints,
             const std::vector<std::vector<T_Register> >& genpoly_representations,
             float _init_threshold,
-            float _delta_threshold) :
+            float _delta_threshold,
+            unsigned int _tree_cache_size = 0) :
                 CC_SequentialDecoding<T_Register, T_IOSymbol>(constraints, genpoly_representations),
                 CC_SequentialDecodingInternal<T_Register, T_IOSymbol, bool>(),
                 init_threshold(_init_threshold),
@@ -71,7 +74,8 @@ public:
                 delta_threshold(_delta_threshold),
                 solution_found(false),
                 effective_node_count(0),
-                nb_moves(0)
+                nb_moves(0),
+                tree_cache_size(_tree_cache_size)
     {}
 
     /**
@@ -79,6 +83,15 @@ public:
      */
     virtual ~CC_FanoDecoding()
     {}
+
+    /**
+     * Set the tree cache size
+     * \param _tree_cache_size Maximum number of nodes to be cached
+     */
+    void set_tree_cache_size(unsigned int _tree_cache_size)
+    {
+        tree_cache_size = _tree_cache_size;
+    }
 
     /**
      * Reset the decoding process
@@ -124,6 +137,7 @@ public:
         while (continue_process(node_current))
         {
             //std::cout << "T=" << cur_threshold << " depth=" << node_current->get_depth() << " node #" << node_current->get_id() << " Mc=" << node_current->get_path_metric() << std::endl;
+            DEBUG_OUT(Parent::verbosity > 0, "T=" << cur_threshold << " depth=" << node_current->get_depth() << " node #" << node_current->get_id() << " Mc=" << node_current->get_path_metric() << std::endl);
 
             if (node_current->get_depth() > Parent::max_depth)
             {
@@ -269,19 +283,27 @@ protected:
             end_symbol = (1<<Parent::encoding.get_k()); // full scan all possible input symbols
         }
 
-        // loop through assumption for this symbol place and create child nodes
-        for (T_IOSymbol in_symbol = 0; in_symbol < end_symbol; in_symbol++)
+        if (node->get_outgoing_edges().size() == 0) // edges are not cached
         {
-            Parent::encoding.encode(in_symbol, out_symbol, in_symbol > 0); // step only for a new symbol place
-            float edge_metric = log2(relmat(out_symbol, forward_depth)) - Parent::edge_bias;
-            float forward_path_metric = edge_metric + node->get_path_metric();
-            FanoEdge *new_edge = new FanoEdge(Parent::edge_count++, in_symbol, out_symbol, edge_metric, node);
-            new_edge->get_edge_tag() = false; // Init traversed back indicator
-            FanoNode *dest_node = new FanoNode(Parent::node_count++, new_edge, forward_path_metric, forward_depth);
-            dest_node->set_registers(Parent::encoding.get_registers());
-            new_edge->set_p_destination(dest_node);
-            node->add_outgoing_edge(new_edge); // add forward edge
-            effective_node_count++;
+            if ((tree_cache_size > 0) && (effective_node_count >= tree_cache_size)) // if tree cache is used and cache limit reached
+            {
+                purge_tree_cache(node); // purge before allocating new nodes
+            }
+
+            // loop through assumption for this symbol place and create child nodes
+            for (T_IOSymbol in_symbol = 0; in_symbol < end_symbol; in_symbol++)
+            {
+                Parent::encoding.encode(in_symbol, out_symbol, in_symbol > 0); // step only for a new symbol place
+                float edge_metric = log2(relmat(out_symbol, forward_depth)) - Parent::edge_bias;
+                float forward_path_metric = edge_metric + node->get_path_metric();
+                FanoEdge *new_edge = new FanoEdge(Parent::edge_count++, in_symbol, out_symbol, edge_metric, node);
+                new_edge->get_edge_tag() = false; // Init traversed back indicator
+                FanoNode *dest_node = new FanoNode(Parent::node_count++, new_edge, forward_path_metric, forward_depth);
+                dest_node->set_registers(Parent::encoding.get_registers());
+                new_edge->set_p_destination(dest_node);
+                node->add_outgoing_edge(new_edge); // add forward edge
+                effective_node_count++;
+            }
         }
     }
 
@@ -305,17 +327,21 @@ protected:
             if (node_predecessor->get_path_metric() >= cur_threshold) // move backward
             {
                 //std::cout << "backward" << std::endl;
-                // delete all successor edges and nodes
-                std::vector<FanoEdge*>& outgoing_edges = node_current->get_outgoing_edges();
-                typename std::vector<FanoEdge*>::iterator e_it = outgoing_edges.begin();
 
-                for (;e_it != outgoing_edges.end(); ++e_it)
+                if (tree_cache_size == 0) // tree cache is not used
                 {
-                    delete *e_it;
-                }
+                    // delete all successor edges and nodes
+                    std::vector<FanoEdge*>& outgoing_edges = node_current->get_outgoing_edges();
+                    typename std::vector<FanoEdge*>::iterator e_it = outgoing_edges.begin();
 
-                effective_node_count -= outgoing_edges.size();
-                outgoing_edges.clear();
+                    for (;e_it != outgoing_edges.end(); ++e_it)
+                    {
+                        delete *e_it;
+                    }
+
+                    effective_node_count -= outgoing_edges.size();
+                    outgoing_edges.clear();
+                }
 
                 // mark incoming edge as traversed back
                 if (node_predecessor != ParentInternal::root_node)
@@ -378,13 +404,50 @@ protected:
         return true;
     }
 
+    /**
+     * Purge tree cache from a node. Keep only the current path and path nodes immediate successors
+     * \param node The node to purge from
+     */
+    void purge_tree_cache(FanoNode *node)
+    {
+        bool node_terminal = true;
+        unsigned int remaining_nodes = 0;
+
+        while (node != ParentInternal::root_node)
+        {
+            FanoNode *node_predecessor = node->get_incoming_edge()->get_p_origin();
+            std::vector<FanoEdge*>& outgoing_edges = node_predecessor->get_outgoing_edges();
+            typename std::vector<FanoEdge*>::iterator e_it = outgoing_edges.begin();
+
+            for (;e_it != outgoing_edges.end(); ++e_it)
+            {
+                FanoNode *node_sibling = (*e_it)->get_p_destination();
+
+                if (node_terminal || (node_sibling != node))
+                {
+                    (*e_it)->get_p_destination()->delete_outgoing_edges();
+                }
+
+                remaining_nodes++;
+            }
+
+            node = node_predecessor;
+            node_terminal = false;
+        }
+
+        remaining_nodes++; // +1 for root node
+        effective_node_count = remaining_nodes;
+        DEBUG_OUT(Parent::verbosity > 1, "purged tree cache, nb of remaining nodes = " << remaining_nodes << std::endl);
+    }
+
     float init_threshold;              //!< Initial path metric threshold
     float cur_threshold;               //!< Current path metric threshold
     float delta_threshold;             //!< Delta of path metric that is applied when lowering threshold
     bool solution_found;               //!< Set to true when eligible terminal node is found
     unsigned int effective_node_count; //!< Count of nodes effectively present in the system
     unsigned int nb_moves;             //!< Number of moves i.e. number of iterations in the main loop
-    float root_threshold;              //!< latest threshold at root node
+    float root_threshold;              //!< Latest threshold at root node
+    unsigned int tree_cache_size;      //!< Tree cache size in maximum number of nodes in cache (0 = tree is not cached)
 };
 
 

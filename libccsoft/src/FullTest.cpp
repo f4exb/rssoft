@@ -144,6 +144,7 @@ public:
         algorithm_type(Algorithm_Stack),
         fano_init_metric(-1.0),
         fano_delta_metric(1.0),
+        fano_tree_cache_size(0),
         edge_bias(0.0)
     {}
 
@@ -173,6 +174,7 @@ public:
     Algorithm_type_t algorithm_type;
     float fano_init_metric;
     float fano_delta_metric;
+    unsigned int fano_tree_cache_size;
     float edge_bias;
 
 private:
@@ -331,6 +333,10 @@ bool Options::parse_algorithm_type(std::string algorithm_type_str)
 				{
 					fano_delta_metric = fano_parms[2];
 				}
+                if (fano_parms.size() > 3)
+                {
+                    fano_tree_cache_size = int(fano_parms[3]);
+                }
 			}
 			else
 			{
@@ -416,7 +422,8 @@ int main(int argc, char *argv[])
                 cc_decoding = new ccsoft::CC_FanoDecoding<unsigned int, unsigned int>(options.k_constraints, 
                         options.generator_polys,
                         options.fano_init_metric,
-                        options.fano_delta_metric);
+                        options.fano_delta_metric,
+                        options.fano_tree_cache_size);
             }
             else
             {
@@ -424,6 +431,7 @@ int main(int argc, char *argv[])
                 return 1;
             }
              
+            cc_decoding->set_verbosity(options.verbosity);
             cc_decoding->set_edge_bias(options.edge_bias); 
             cc_decoding->get_encoding().print(std::cout);
             unsigned int out_symbols_nb = 1<<cc_decoding->get_encoding().get_n();
