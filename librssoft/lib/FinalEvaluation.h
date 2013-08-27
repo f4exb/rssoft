@@ -37,7 +37,7 @@ class GFq_Polynomial;
 }
 
 class EvaluationValues;
-class ReliabilityMatrix;
+class RS_ReliabilityMatrix;
 
 /**
  * \brief Probability score weighted codeword 
@@ -153,7 +153,7 @@ public:
     /**
      * Runs one evaluation for the given polynomials
      */
-    void run(const std::vector<gf::GFq_Polynomial>& polynomials, const ReliabilityMatrix& relmat);
+    void run(const std::vector<gf::GFq_Polynomial>& polynomials, const RS_ReliabilityMatrix& relmat);
 
     /**
      * Get the best probability scoring codeword

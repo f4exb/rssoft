@@ -33,7 +33,7 @@ namespace rssoft
 /**
  * \brief Reliability Matrix class. Analog data is entered first then the normalization method is called to get the actual reliability data (probabilities).
  */
-class ReliabilityMatrix
+class RS_ReliabilityMatrix
 {
 public:
 	/**
@@ -41,17 +41,17 @@ public:
 	 * \param nb_symbols_log2 Log2 of the number of symbols used (number of symbols is a power of two)
 	 * \param message_length Length of one message block to be decoded
 	 */
-	ReliabilityMatrix(unsigned int nb_symbols_log2, unsigned int message_length);
+	RS_ReliabilityMatrix(unsigned int nb_symbols_log2, unsigned int message_length);
     
     /**
      * Copy Constructor
      */
-    ReliabilityMatrix(const ReliabilityMatrix& relmat);
+    RS_ReliabilityMatrix(const RS_ReliabilityMatrix& relmat);
 
 	/**
 	 * Destructor. Frees the matrix storage.
 	 */
-	~ReliabilityMatrix();
+	~RS_ReliabilityMatrix();
 
 	/**
 	 * Enter one more symbol position data
@@ -153,7 +153,7 @@ public:
 	/**
 	 * Prints a reliability matrix to an output stream
 	 */
-	friend std::ostream& operator <<(std::ostream& os, const ReliabilityMatrix& matrix);
+	friend std::ostream& operator <<(std::ostream& os, const RS_ReliabilityMatrix& matrix);
     
 
 protected:

@@ -23,11 +23,29 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
+#include <time.h>
+
 #ifdef _DEBUG
 #define DEBUG_OUT(condition, str) if (condition) { std::cout << str; };
 #else
 #define DEBUG_OUT(condition, str) 
 #endif
+
+// time difference in seconds
+double debug_get_time_difference(const timespec& time1, const timespec& time2)
+{
+    long long unsigned int time1_ns = time1.tv_sec * 1000000000ull + time1.tv_nsec;
+    long long unsigned int time2_ns = time2.tv_sec * 1000000000ull + time2.tv_nsec;
+
+    if (time1_ns > time2_ns)
+    {
+        return ((double) time1_ns - time2_ns) / 1e9;
+    }
+    else
+    {
+        return ((double) time2_ns - time1_ns) / 1e9;
+    }
+}
 
 #endif // __DEBUG_H__
  

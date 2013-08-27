@@ -8,7 +8,7 @@ librssoft_la_SOURCES = GFq.cpp \
     GFq_BivariateMonomial.cpp \
     GFq_BivariatePolynomial.cpp \
     GF_Utils.cpp \
-	ReliabilityMatrix.cpp \
+	RS_ReliabilityMatrix.cpp \
 	MultiplicityMatrix.cpp \
 	GSKV_Interpolation.cpp \
 	RR_Factorization.cpp \
@@ -29,7 +29,7 @@ library_include_HEADERS = GFq.h \
     GFq_BivariateMonomial.h \
     GFq_BivariatePolynomial.h \
     GF_Utils.h \
-	ReliabilityMatrix.h \
+	RS_ReliabilityMatrix.h \
 	MultiplicityMatrix.h \
 	GSKV_Interpolation.h \
 	RR_Factorization.h \

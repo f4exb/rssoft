@@ -26,7 +26,7 @@
 #include "CC_Encoding.h"
 #include "CC_TreeEdge.h"
 #include "CC_TreeNode.h"
-#include "ReliabilityMatrix.h"
+#include "CC_ReliabilityMatrix.h"
 #include "CC_TreeGraphviz.h"
 
 #include <cmath>
@@ -275,7 +275,7 @@ public:
      * \param relmat Reference to the reliability matrix
      * \param decoded_message Vector of symbols of retrieved message
      */
-    virtual bool decode(const ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message) = 0;
+    virtual bool decode(const CC_ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message) = 0;
 
 protected:
     CC_Encoding<T_Register, T_IOSymbol> encoding;   //!< Convolutional encoding object
@@ -346,7 +346,7 @@ protected:
     /**
      * Initialize process at the root node
      */
-    void init_root(const ReliabilityMatrix& relmat)
+    void init_root()
     {
         root_node = new CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>(0, 0, 0.0, -1);
     }
@@ -356,7 +356,7 @@ protected:
      * \param node Node to visit
      * \param relmat Reliability matrix reference
      */
-    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>* node, const ReliabilityMatrix& relmat) = 0;
+    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>* node, const CC_ReliabilityMatrix& relmat) = 0;
 
     /**
      * Back track from a node. When the node is the selected terminal node it is used to retrieve the decoded message

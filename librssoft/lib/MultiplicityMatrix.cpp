@@ -21,7 +21,7 @@
 
  */
 #include "MultiplicityMatrix.h"
-#include "ReliabilityMatrix.h"
+#include "RS_ReliabilityMatrix.h"
 #include <iomanip>
 #include <cmath>
  
@@ -29,7 +29,7 @@ namespace rssoft
 { 
 
 // ================================================================================================
-MultiplicityMatrix::MultiplicityMatrix(const ReliabilityMatrix& relmat, unsigned int multiplicity, bool soft_decision) :
+MultiplicityMatrix::MultiplicityMatrix(const RS_ReliabilityMatrix& relmat, unsigned int multiplicity, bool soft_decision) :
     _nb_symbols_log2(relmat.get_nb_symbols_log2()),
     _nb_symbols(relmat.get_nb_symbols()),
     _message_length(relmat.get_message_length()),
@@ -37,7 +37,7 @@ MultiplicityMatrix::MultiplicityMatrix(const ReliabilityMatrix& relmat, unsigned
 {
     if (soft_decision)
     {
-        ReliabilityMatrix w_relmat(relmat);
+        RS_ReliabilityMatrix w_relmat(relmat);
         unsigned int star_row, star_col;
         
         for (unsigned int s = multiplicity; s > 0; s--)
@@ -81,7 +81,7 @@ MultiplicityMatrix::MultiplicityMatrix(const ReliabilityMatrix& relmat, unsigned
 }
 
 // ================================================================================================
-MultiplicityMatrix::MultiplicityMatrix(const ReliabilityMatrix& relmat, float lambda) :
+MultiplicityMatrix::MultiplicityMatrix(const RS_ReliabilityMatrix& relmat, float lambda) :
     _nb_symbols_log2(relmat.get_nb_symbols_log2()),
     _nb_symbols(relmat.get_nb_symbols()),
     _message_length(relmat.get_message_length()),

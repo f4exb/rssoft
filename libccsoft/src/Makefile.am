@@ -9,4 +9,4 @@ Decoder_test_LDADD = ../lib/libccsoft.la
 
 FullTest_SOURCES = FullTest.cpp
 FullTest_CPPFLAGS = -I$(srcdir)/../lib $(BOOST_CPPFLAGS)
-FullTest_LDADD = ../lib/libccsoft.la
+FullTest_LDADD = ../lib/libccsoft.la -lrt

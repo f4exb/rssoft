@@ -30,7 +30,7 @@
 #include "GFq.h"
 #include "GF_Utils.h"
 #include "EvaluationValues.h"
-#include "ReliabilityMatrix.h"
+#include "RS_ReliabilityMatrix.h"
 #include "MultiplicityMatrix.h"
 #include "GSKV_Interpolation.h"
 #include "RR_Factorization.h"
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     std::cout << std::endl;
     //std::cout << std::endl;
 
-	rssoft::ReliabilityMatrix mat_Pi(3,7);
+	rssoft::RS_ReliabilityMatrix mat_Pi(3,7);
 
 	std::cout << std::endl;
 	std::cout << "Power matrix:" << std::endl;

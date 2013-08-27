@@ -22,8 +22,8 @@
 
  */
 
-#ifndef __RELIABILITY_MATRIX_H__
-#define __RELIABILITY_MATRIX_H__
+#ifndef __CC_RELIABILITY_MATRIX_H__
+#define __CC_RELIABILITY_MATRIX_H__
 
 #include <iostream>
 
@@ -33,7 +33,7 @@ namespace ccsoft
 /**
  * \brief Reliability Matrix class. Analog data is entered first then the normalization method is called to get the actual reliability data (probabilities).
  */
-class ReliabilityMatrix
+class CC_ReliabilityMatrix
 {
 public:
     /**
@@ -41,17 +41,17 @@ public:
      * \param nb_symbols_log2 Log2 of the number of symbols used (number of symbols is a power of two)
      * \param message_length Length of one message block to be decoded
      */
-    ReliabilityMatrix(unsigned int nb_symbols_log2, unsigned int message_length);
+    CC_ReliabilityMatrix(unsigned int nb_symbols_log2, unsigned int message_length);
     
     /**
      * Copy Constructor
      */
-    ReliabilityMatrix(const ReliabilityMatrix& relmat);
+    CC_ReliabilityMatrix(const CC_ReliabilityMatrix& relmat);
 
     /**
      * Destructor. Frees the matrix storage.
      */
-    ~ReliabilityMatrix();
+    ~CC_ReliabilityMatrix();
 
     /**
      * Enter one more symbol position data
@@ -161,7 +161,7 @@ public:
     /**
      * Prints a reliability matrix to an output stream
      */
-    friend std::ostream& operator <<(std::ostream& os, const ReliabilityMatrix& matrix);
+    friend std::ostream& operator <<(std::ostream& os, const CC_ReliabilityMatrix& matrix);
     
 
 protected:
@@ -175,4 +175,4 @@ protected:
 
 }
 
-#endif // __RELIABILITY_MATRIX_H__
+#endif // __CC_RELIABILITY_MATRIX_H__

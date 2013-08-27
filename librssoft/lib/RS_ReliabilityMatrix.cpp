@@ -21,7 +21,7 @@
 
  */
 
-#include "ReliabilityMatrix.h"
+#include "RS_ReliabilityMatrix.h"
 #include <iomanip>
 #include <cstring>
 
@@ -29,7 +29,7 @@ namespace rssoft
 {
 
 // ================================================================================================
-ReliabilityMatrix::ReliabilityMatrix(unsigned int nb_symbols_log2, unsigned int message_length) :
+RS_ReliabilityMatrix::RS_ReliabilityMatrix(unsigned int nb_symbols_log2, unsigned int message_length) :
 		_nb_symbols_log2(nb_symbols_log2),
 		_nb_symbols(1<<nb_symbols_log2),
 		_message_length(message_length),
@@ -44,7 +44,7 @@ ReliabilityMatrix::ReliabilityMatrix(unsigned int nb_symbols_log2, unsigned int 
 }
 
 // ================================================================================================
-ReliabilityMatrix::ReliabilityMatrix(const ReliabilityMatrix& relmat) : 
+RS_ReliabilityMatrix::RS_ReliabilityMatrix(const RS_ReliabilityMatrix& relmat) : 
 		_nb_symbols_log2(relmat.get_nb_symbols_log2()),
 		_nb_symbols(relmat.get_nb_symbols()),
 		_message_length(relmat.get_message_length()),
@@ -55,13 +55,13 @@ ReliabilityMatrix::ReliabilityMatrix(const ReliabilityMatrix& relmat) :
 }
 
 // ================================================================================================
-ReliabilityMatrix::~ReliabilityMatrix()
+RS_ReliabilityMatrix::~RS_ReliabilityMatrix()
 {
 	delete[] _matrix;
 }
 
 // ================================================================================================
-void ReliabilityMatrix::enter_symbol_data(float *symbol_data)
+void RS_ReliabilityMatrix::enter_symbol_data(float *symbol_data)
 {
 	if (_message_symbol_count < _message_length)
 	{
@@ -71,7 +71,7 @@ void ReliabilityMatrix::enter_symbol_data(float *symbol_data)
 }
 
 // ================================================================================================
-void ReliabilityMatrix::enter_symbol_data(unsigned int message_symbol_index, float *symbol_data)
+void RS_ReliabilityMatrix::enter_symbol_data(unsigned int message_symbol_index, float *symbol_data)
 {
 	if (message_symbol_index < _message_length)
 	{
@@ -80,7 +80,7 @@ void ReliabilityMatrix::enter_symbol_data(unsigned int message_symbol_index, flo
 }
 
 // ================================================================================================
-void ReliabilityMatrix::enter_erasure()
+void RS_ReliabilityMatrix::enter_erasure()
 {
 	if (_message_symbol_count < _message_length)
 	{
@@ -94,7 +94,7 @@ void ReliabilityMatrix::enter_erasure()
 }
 
 // ================================================================================================
-void ReliabilityMatrix::enter_erasure(unsigned int message_symbol_index)
+void RS_ReliabilityMatrix::enter_erasure(unsigned int message_symbol_index)
 {
 	if (message_symbol_index < _message_length)
 	{
@@ -106,7 +106,7 @@ void ReliabilityMatrix::enter_erasure(unsigned int message_symbol_index)
 }
 
 // ================================================================================================
-void ReliabilityMatrix::normalize()
+void RS_ReliabilityMatrix::normalize()
 {
 	float col_sum = 0;
 	float last_col_sum;
@@ -135,7 +135,7 @@ void ReliabilityMatrix::normalize()
 }
 
 // ================================================================================================
-float ReliabilityMatrix::find_max(unsigned int& i_row, unsigned int& i_col) const
+float RS_ReliabilityMatrix::find_max(unsigned int& i_row, unsigned int& i_col) const
 {
     float max = 0.0;
     i_row = 0; // prevent core dump if all items are 0
@@ -158,7 +158,7 @@ float ReliabilityMatrix::find_max(unsigned int& i_row, unsigned int& i_col) cons
 }
 
 // ================================================================================================
-std::ostream& operator <<(std::ostream& os, const ReliabilityMatrix& matrix)
+std::ostream& operator <<(std::ostream& os, const RS_ReliabilityMatrix& matrix)
 {
 	unsigned int nb_rows = matrix.get_nb_symbols();
 	unsigned int nb_cols = matrix.get_message_length();

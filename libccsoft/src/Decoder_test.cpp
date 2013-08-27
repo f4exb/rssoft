@@ -23,7 +23,7 @@
 
 #include "CC_StackDecoding.h"
 #include "CCSoft_Exception.h"
-#include "ReliabilityMatrix.h"
+#include "CC_ReliabilityMatrix.h"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
         float hanchen1_soft_array[4] = {0.1,0.1,0.1,0.1};
         unsigned char out_symbol;
         std::ostringstream oos;
-        ccsoft::ReliabilityMatrix relmat_hanchen1_1(2, 7);
+        ccsoft::CC_ReliabilityMatrix relmat_hanchen1_1(2, 7);
 
         for (unsigned int i=0; i<7; i++)
         {
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         unsigned char hanchen2_in_symbols[4] = {3,2,0,0};
         float hanchen2_soft_array[8] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
         oos.str("");
-        ccsoft::ReliabilityMatrix relmat_hanchen2_1(3, 4);
+        ccsoft::CC_ReliabilityMatrix relmat_hanchen2_1(3, 4);
 
         for (unsigned int i=0; i<4; i++)
         {

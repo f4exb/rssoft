@@ -30,7 +30,7 @@
 namespace rssoft
 {
 
-class ReliabilityMatrix;
+class RS_ReliabilityMatrix;
 
 /**
  * \brief Ordering of elements in the sparse matrix according to the column first order. Indexes are pairs of (row, column) indexes
@@ -110,14 +110,14 @@ public:
      * \param soft_decision True to build the matrix for soft decision decoding (default) 
      *                      else to build the matrix for hard decision list decoding with specified multiplicity at each point
      */
-    MultiplicityMatrix(const ReliabilityMatrix& relmat, unsigned int multiplicity, bool soft_decision=true);
+    MultiplicityMatrix(const RS_ReliabilityMatrix& relmat, unsigned int multiplicity, bool soft_decision=true);
 
     /**
      * Constructs a new multiplicity matrix. Uses short construction algorithm.
      * \param relmat Reliability matrix to build the multiplicity matrix from
      * \param lambda Multiplicative constant
      */
-    MultiplicityMatrix(const ReliabilityMatrix& relmat, float lambda);
+    MultiplicityMatrix(const RS_ReliabilityMatrix& relmat, float lambda);
     
     /**
      * Destructor

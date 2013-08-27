@@ -21,7 +21,7 @@
 
 */
 
-#include "ReliabilityMatrix.h"
+#include "CC_ReliabilityMatrix.h"
 #include "CC_Encoding.h"
 #include "CC_StackDecoding.h"
 #include "CC_FanoDecoding.h"
@@ -145,7 +145,8 @@ public:
         fano_init_metric(-1.0),
         fano_delta_metric(1.0),
         fano_tree_cache_size(0),
-        edge_bias(0.0)
+        edge_bias(0.0),
+        fano_delta_init_threshold(0.0)
     {}
 
     ~Options()
@@ -176,6 +177,7 @@ public:
     float fano_delta_metric;
     unsigned int fano_tree_cache_size;
     float edge_bias;
+    float fano_delta_init_threshold;
 
 private:
     bool parse_generator_polys_data(std::string generator_polys_data_str);
@@ -337,6 +339,10 @@ bool Options::parse_algorithm_type(std::string algorithm_type_str)
                 {
                     fano_tree_cache_size = int(fano_parms[3]);
                 }
+                if (fano_parms.size() > 4)
+                {
+                    fano_delta_init_threshold = int(fano_parms[4]);
+                }
 			}
 			else
 			{
@@ -423,7 +429,8 @@ int main(int argc, char *argv[])
                         options.generator_polys,
                         options.fano_init_metric,
                         options.fano_delta_metric,
-                        options.fano_tree_cache_size);
+                        options.fano_tree_cache_size,
+                        options.fano_delta_init_threshold);
             }
             else
             {
@@ -476,7 +483,7 @@ int main(int argc, char *argv[])
                     options.input_symbols.push_back(0);
                 }
 
-                ccsoft::ReliabilityMatrix relmat(cc_decoding->get_encoding().get_n(), options.input_symbols.size());
+                ccsoft::CC_ReliabilityMatrix relmat(cc_decoding->get_encoding().get_n(), options.input_symbols.size());
                 unsigned int nb_symbols = 1<<cc_decoding->get_encoding().get_n();
                 float *symbol_data = new float[nb_symbols];
 

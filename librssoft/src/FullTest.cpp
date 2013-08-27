@@ -27,7 +27,7 @@
 #include "GF2_Polynomial.h"
 #include "GF_Utils.h"
 #include "EvaluationValues.h"
-#include "ReliabilityMatrix.h"
+#include "RS_ReliabilityMatrix.h"
 #include "MultiplicityMatrix.h"
 #include "GSKV_Interpolation.h"
 #include "RR_Factorization.h"
@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
 
         // Simulate reception behind noisy channel. Reliability matrix is created with noisy power samples.
 
-        rssoft::ReliabilityMatrix mat_Pi(options.m,n);
+        rssoft::RS_ReliabilityMatrix mat_Pi(options.m,n);
         std::vector<rssoft::gf::GFq_Symbol> hard_decision;
         unsigned int hard_decision_errors = 0;
         float *mat_Pi_col = new float[q];

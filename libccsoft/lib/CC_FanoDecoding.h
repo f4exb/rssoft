@@ -30,12 +30,15 @@
 #include "CCSoft_Exception.h"
 #include "CC_TreeEdge.h"
 #include "CC_TreeNode.h"
-#include "ReliabilityMatrix.h"
+#include "CC_ReliabilityMatrix.h"
 #include "CC_TreeGraphviz.h"
 #include "Debug.h"
 
 #include <cmath>
+#include <time.h>
 #include <algorithm>
+#include <iostream>
+#include <iomanip>
 
 namespace ccsoft
 {
@@ -60,12 +63,14 @@ public:
      * \param _init_threshold Initial path metric threshold
      * \param _delta_threshold Delta of path metric that is applied when lowering threshold
      * \param _tree_cache_size Tree cache maximum size in number of nodes (0 if not used)
+     * \param _delta_init_threshold: Delta of path metric that is applied when restarting with a lower initial threshold (0 if not used)
      */
 	CC_FanoDecoding(const std::vector<unsigned int>& constraints,
             const std::vector<std::vector<T_Register> >& genpoly_representations,
             float _init_threshold,
             float _delta_threshold,
-            unsigned int _tree_cache_size = 0) :
+            unsigned int _tree_cache_size = 0,
+            float _delta_init_threshold = 0.0) :
                 CC_SequentialDecoding<T_Register, T_IOSymbol>(constraints, genpoly_representations),
                 CC_SequentialDecodingInternal<T_Register, T_IOSymbol, bool>(),
                 init_threshold(_init_threshold),
@@ -75,7 +80,9 @@ public:
                 solution_found(false),
                 effective_node_count(0),
                 nb_moves(0),
-                tree_cache_size(_tree_cache_size)
+                tree_cache_size(_tree_cache_size),
+                unloop(_delta_init_threshold < 0.0),
+                delta_init_threshold(_delta_init_threshold)
     {}
 
     /**
@@ -92,7 +99,7 @@ public:
     {
         tree_cache_size = _tree_cache_size;
     }
-
+    
     /**
      * Reset the decoding process
      */
@@ -111,7 +118,7 @@ public:
      * \parm relmat Reference to the reliability matrix
      * \parm decoded_message Vector of symbols of retrieved message
      */
-    virtual bool decode(const ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message)
+    virtual bool decode(const CC_ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message)
     {
         FanoNode *node_current, *node_successor;
 
@@ -126,18 +133,24 @@ public:
         }
 
         reset();
-        ParentInternal::init_root(relmat); // initialize with root node
+        ParentInternal::init_root(); // initialize root node
         Parent::node_count++;
         effective_node_count++;
         node_current = ParentInternal::root_node;
         nb_moves = 0;
 
+#ifdef _DEBUG
+        timespec time1, time2;
+        int time_option = CLOCK_REALTIME;
+        clock_gettime(time_option, &time1);
+#endif
+
         visit_node_forward(node_current, relmat);
 
-        while (continue_process(node_current))
+        while (continue_process(node_current, relmat))
         {
             //std::cout << "T=" << cur_threshold << " depth=" << node_current->get_depth() << " node #" << node_current->get_id() << " Mc=" << node_current->get_path_metric() << std::endl;
-            DEBUG_OUT(Parent::verbosity > 0, "T=" << cur_threshold << " depth=" << node_current->get_depth() << " node #" << node_current->get_id() << " Mc=" << node_current->get_path_metric() << std::endl);
+            DEBUG_OUT(Parent::verbosity > 1, "T=" << cur_threshold << " depth=" << node_current->get_depth() << " node #" << node_current->get_id() << " Mc=" << node_current->get_path_metric() << std::endl);
 
             if (node_current->get_depth() > Parent::max_depth)
             {
@@ -164,19 +177,19 @@ public:
 
             if (child_nodes.size() == 0) // exhausted forward paths
             {
-                //std::cout << "exhaustion of forward paths at node #" << node_current->get_id() << std::endl;
+                DEBUG_OUT(Parent::verbosity > 2, "exhaustion of forward paths at node #" << node_current->get_id() << std::endl);
                 node_current = move_back_from_node_or_loosen_threshold(node_current);
                 continue;
             }
 
             std::sort(child_nodes.begin(), child_nodes.end(), node_pointer_ordering<FanoNode>);
             node_successor = *child_nodes.begin(); // best successor
-            //std::cout << "best successor node #" << node_successor->get_id() << " Ms=" << node_successor->get_path_metric() << std::endl;
+            DEBUG_OUT(Parent::verbosity > 2, "best successor node #" << node_successor->get_id() << " Ms=" << node_successor->get_path_metric() << std::endl);
 
             if (node_successor->get_path_metric() >= cur_threshold) // Ms >= T
             {
                 // move forward:
-                //std::cout << "forward" << std::endl;
+                DEBUG_OUT(Parent::verbosity > 2, "forward" << std::endl);
                 FanoNode *node_predecessor = node_current;
                 node_current = node_successor;
 
@@ -187,6 +200,10 @@ public:
                     ParentInternal::back_track(node_current, decoded_message, true); // back track from terminal node to retrieve decoded message
                     solution_found = true;
                     Parent::max_depth++;
+#ifdef _DEBUG
+                    clock_gettime(time_option, &time2);
+                    DEBUG_OUT(Parent::verbosity > 0, std::cout << "Decoding time: " << std::setw(12) << std::setprecision(9) << debug_get_time_difference(time2,time1) << " s" << std::endl);
+#endif
                     return true;
                 }
 
@@ -204,7 +221,7 @@ public:
                     	cur_threshold = (nb_delta * delta_threshold) + init_threshold;
                     }
 
-                    //std::cout << "tightening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl;
+                    DEBUG_OUT(Parent::verbosity > 2, "tightening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl);
                 }
 
                 // create children nodes from the new current node
@@ -261,7 +278,7 @@ protected:
      * \parm node Node to visit
      * \parm relmat Reliability matrix being used
      */
-    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, bool>* node, const ReliabilityMatrix& relmat)
+    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, bool>* node, const CC_ReliabilityMatrix& relmat)
     {
         unsigned int n = Parent::encoding.get_n();
         int forward_depth = node->get_depth() + 1;
@@ -318,7 +335,7 @@ protected:
         if (node_current == ParentInternal::root_node) // at root node there are no other options than loosening threshold
         {
             cur_threshold -= delta_threshold;
-            //std::cout << "loosening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl;
+            DEBUG_OUT(Parent::verbosity > 2, "loosening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl);
         }
         else
         {
@@ -326,7 +343,7 @@ protected:
 
             if (node_predecessor->get_path_metric() >= cur_threshold) // move backward
             {
-                //std::cout << "backward" << std::endl;
+                DEBUG_OUT(Parent::verbosity > 2, std::cout << "backward" << std::endl);
 
                 if (tree_cache_size == 0) // tree cache is not used
                 {
@@ -355,7 +372,7 @@ protected:
             else // loosen threshold
             {
                 cur_threshold -= delta_threshold;
-                //std::cout << "loosening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl;
+                DEBUG_OUT(Parent::verbosity > 2, "loosening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl);
             }
         }
 
@@ -365,7 +382,7 @@ protected:
     /**
      * Check if process can continue
      */
-    bool continue_process(FanoNode *node_current) const
+    bool continue_process(FanoNode *node_current, const CC_ReliabilityMatrix& relmat) 
     {
         if ((node_current == ParentInternal::root_node) && (nb_moves > 0) && (cur_threshold == root_threshold))
         {
@@ -384,8 +401,25 @@ protected:
 
             if (children_open)
             {
-                std::cerr << "Loop condition detected, aborting" << std::endl;
-                return false;
+                if (unloop && ((Parent::use_metric_limit) && (init_threshold > Parent::metric_limit)))
+                {
+                    init_threshold += delta_init_threshold; // lower initial threshold and start all over again (delta if used is negative)
+                    Parent::reset();                        // reset but do not delete root node
+                    cur_threshold = init_threshold;
+                    solution_found = false;
+                    ParentInternal::root_node->delete_outgoing_edges(); // effectively resets the root node without destroying it
+                    Parent::node_count = 1;
+                    effective_node_count = 1;
+                    nb_moves = 0;
+                    visit_node_forward(node_current, relmat); // visit root node again
+                    std::cerr << "Loop condition detected, restart with init threshold = " << init_threshold << std::endl;
+                    return true;
+                }
+                else
+                {
+                    std::cerr << "Loop condition detected, aborting" << std::endl;
+                    return false;
+                }
             }
         }
 
@@ -448,6 +482,8 @@ protected:
     unsigned int nb_moves;             //!< Number of moves i.e. number of iterations in the main loop
     float root_threshold;              //!< Latest threshold at root node
     unsigned int tree_cache_size;      //!< Tree cache size in maximum number of nodes in cache (0 = tree is not cached)
+    bool unloop;                       //!< If true when a loop condition is detected attempt to restart with a lower threshold
+    float delta_init_threshold;        //!< Delta of path metric that is applied when restarting with a lower initial threshold 
 };
 
 

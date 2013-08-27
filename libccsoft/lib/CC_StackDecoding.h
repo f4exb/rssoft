@@ -29,7 +29,7 @@
 #include "CCSoft_Exception.h"
 #include "CC_TreeEdge.h"
 #include "CC_TreeNode.h"
-#include "ReliabilityMatrix.h"
+#include "CC_ReliabilityMatrix.h"
 #include "CC_TreeGraphviz.h"
 
 #include <cmath>
@@ -102,7 +102,7 @@ public:
      * \param relmat Reference to the reliability matrix
      * \param decoded_message Vector of symbols of retrieved message
      */
-    virtual bool decode(const ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message)
+    virtual bool decode(const CC_ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message)
     {
         if (relmat.get_message_length() < Parent::encoding.get_m())
         {
@@ -115,7 +115,7 @@ public:
         }
 
         reset();
-        ParentInternal::init_root(relmat); // initialize the root node
+        ParentInternal::init_root(); // initialize the root node
         Parent::node_count++;
         visit_node_forward(ParentInternal::root_node, relmat); // visit the root node
 
@@ -189,7 +189,7 @@ protected:
      * \node Node to visit
      * \relmat Reliability matrix being used
      */
-    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, CC_TreeEdgeTag_Empty>* node, const ReliabilityMatrix& relmat)
+    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, CC_TreeEdgeTag_Empty>* node, const CC_ReliabilityMatrix& relmat)
     {
         int forward_depth = node->get_depth() + 1;
         T_IOSymbol out_symbol;

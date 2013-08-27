@@ -23,7 +23,7 @@
 #include "FinalEvaluation.h"
 #include "GFq_Polynomial.h"
 #include "EvaluationValues.h"
-#include "ReliabilityMatrix.h"
+#include "RS_ReliabilityMatrix.h"
 #include "RSSoft_Exception.h"
  
 #include <algorithm>
@@ -94,7 +94,7 @@ void FinalEvaluation::init()
 }
 
 // ================================================================================================
-void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, const ReliabilityMatrix& relmat)
+void FinalEvaluation::run(const std::vector<gf::GFq_Polynomial>& polynomials, const RS_ReliabilityMatrix& relmat)
 {
     if (polynomials.size() == 0)
     {
