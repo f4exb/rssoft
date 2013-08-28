@@ -1,7 +1,9 @@
 lib_LTLIBRARIES = libccsoft.la
 
 libccsoft_la_SOURCES = \
-	CC_ReliabilityMatrix.cpp
+	CC_ReliabilityMatrix.cpp \
+	CC_SequentialDecoding.cpp \
+	CC_Encoding.cpp
 
 #libccsoft_la_LIBADD = -lrt 
 

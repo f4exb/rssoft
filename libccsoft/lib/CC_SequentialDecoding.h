@@ -41,10 +41,7 @@ namespace ccsoft
 /**
  * Base 2 logarithm
  */
-float log2(float x)
-{
-    return log(x)/log(2.0);
-}
+float log2(float x);
 
 /**
  * \brief class used for node ordering

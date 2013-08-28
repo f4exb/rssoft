@@ -31,27 +31,6 @@ namespace ccsoft
 {
 
 /**
- * XOR all bits in a register. Uses the bit counting method.
- * \tparam T_Register Type of register
- * \param reg Register
- * \return true=1 or false=0
- */
-template<typename T_Register>
-bool xorbits(const T_Register& reg)
-{
-    T_Register w_reg = reg;
-    unsigned int nb_ones = 0;
-
-    while(w_reg != 0)
-    {
-        nb_ones += w_reg % 2;
-        w_reg /= 2;
-    }
-
-    return (nb_ones % 2) == 1;
-}
-
-/**
  * Print the content of a register in hexadecimal to an output stream
  * \tparam T_Register Type of register
  * \param reg Register
@@ -70,11 +49,7 @@ void print_register(const T_Register& reg, std::ostream& os)
  * \param os Output stream
  */
 template<>
-void print_register<unsigned char>(const unsigned char& reg, std::ostream& os)
-{
-    os << std::hex << (unsigned int) reg;
-    os << std::dec;
-}
+void print_register<unsigned char>(const unsigned char& reg, std::ostream& os);
 
 /**
  * Print the content of a I/O symbol to an output stream
@@ -94,10 +69,7 @@ void print_symbol(const T_IOSymbol& sym, std::ostream& os)
  * \param os Output stream
  */
 template<>
-void print_symbol<unsigned char>(const unsigned char& sym, std::ostream& os)
-{
-    os << std::dec << (unsigned int) sym;
-}
+void print_symbol<unsigned char>(const unsigned char& sym, std::ostream& os);
 
 /**
  * \brief Convolutional encoding class. Supports any k,n with k<n.
@@ -299,6 +271,27 @@ public:
 
 
 protected:
+
+    /**
+     * XOR all bits in a register. Uses the bit counting method.
+     * \tparam T_Register Type of register
+     * \param reg Register
+     * \return true=1 or false=0
+     */
+    bool xorbits(const T_Register& reg)
+    {
+        T_Register w_reg = reg;
+        unsigned int nb_ones = 0;
+
+        while(w_reg != 0)
+        {
+            nb_ones += w_reg % 2;
+            w_reg /= 2;
+        }
+
+        return (nb_ones % 2) == 1;
+    }
+
     unsigned int k; //!< Number of input bits or input symbol size in bits
     unsigned int n; //!< Number of output bits or output symbol size in bits
     unsigned int m; //!< Maximum register length
