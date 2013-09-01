@@ -2,7 +2,6 @@ lib_LTLIBRARIES = libccsoft.la
 
 libccsoft_la_SOURCES = \
 	CC_ReliabilityMatrix.cpp \
-	CC_SequentialDecoding.cpp \
 	CC_Encoding.cpp
 
 #libccsoft_la_LIBADD = -lrt 
@@ -17,5 +16,6 @@ library_include_HEADERS = \
 	CC_StackDecoding.h \
 	CC_TreeEdge.h \
     CC_TreeNode.h \
+    CC_TreeNodeEdge.h \
     CC_TreeGraphviz.h \
     Debug.h

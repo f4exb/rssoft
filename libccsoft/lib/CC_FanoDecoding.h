@@ -19,7 +19,9 @@
 
  Convolutional soft-decision decoder based on the Fano sequential algorithm as described in
  Sequential Decoding of Convolutional Codes by Yunghsiang S. Han and Po-Ning Chen (algorithm p.26)
- web.ntpu.edu.tw/~yshan/book_chapter.pdf‎
+ web.ntpu.edu.tw/~yshan/book_chapter.pdf
+
+ Uses a node+edge combo code tree representation‎
 
  */
 #ifndef __CC_FANO_DECODING_H__
@@ -28,8 +30,7 @@
 #include "CC_SequentialDecoding.h"
 #include "CC_Encoding.h"
 #include "CCSoft_Exception.h"
-#include "CC_TreeEdge.h"
-#include "CC_TreeNode.h"
+#include "CC_TreeNodeEdge.h"
 #include "CC_ReliabilityMatrix.h"
 #include "CC_TreeGraphviz.h"
 #include "Debug.h"
@@ -44,7 +45,7 @@ namespace ccsoft
 {
 
 /**
- * \brief The Fano like Decoding class. Edge tag is a boolean used as the traversed back indicator.
+ * \brief The Fano like Decoding class. Tag is a boolean used as the traversed back indicator.
  * \tparam T_Register Type of the encoder internal registers
  * \tparam T_IOSymbol Type of the input and output symbols
  */
@@ -120,7 +121,7 @@ public:
      */
     virtual bool decode(const CC_ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message)
     {
-        FanoNode *node_current, *node_successor;
+        FanoNodeEdge *node_edge_current, *node_edge_successor;
 
         if (relmat.get_message_length() < Parent::encoding.get_m())
         {
@@ -136,7 +137,7 @@ public:
         ParentInternal::init_root(); // initialize root node
         Parent::node_count++;
         effective_node_count++;
-        node_current = ParentInternal::root_node;
+        node_edge_current = ParentInternal::root_node;
         nb_moves = 0;
 
 #ifdef _DEBUG
@@ -145,59 +146,59 @@ public:
         clock_gettime(time_option, &time1);
 #endif
 
-        visit_node_forward(node_current, relmat);
+        visit_node_forward(node_edge_current, relmat);
 
-        while (continue_process(node_current, relmat))
+        while (continue_process(node_edge_current, relmat))
         {
             //std::cout << "T=" << cur_threshold << " depth=" << node_current->get_depth() << " node #" << node_current->get_id() << " Mc=" << node_current->get_path_metric() << std::endl;
-            DEBUG_OUT(Parent::verbosity > 1, "T=" << cur_threshold << " depth=" << node_current->get_depth() << " node #" << node_current->get_id() << " Mc=" << node_current->get_path_metric() << std::endl);
+            DEBUG_OUT(Parent::verbosity > 1, "T=" << cur_threshold << " depth=" << node_edge_current->get_depth() << " node #" << node_edge_current->get_id() << " Mc=" << node_edge_current->get_path_metric() << std::endl);
 
-            if (node_current->get_depth() > Parent::max_depth)
+            if (node_edge_current->get_depth() > Parent::max_depth)
             {
-            	Parent::max_depth = node_current->get_depth();
+            	Parent::max_depth = node_edge_current->get_depth();
             }
 
-            if (node_current == ParentInternal::root_node)
+            if (node_edge_current == ParentInternal::root_node)
             {
                 root_threshold = cur_threshold;
             }
 
             nb_moves++;
-            const std::vector<FanoEdge*>& outgoing_edges = node_current->get_outgoing_edges();
-            typename std::vector<FanoEdge*>::const_iterator e_it = outgoing_edges.begin();
-            std::vector<FanoNode*> child_nodes;
+            const std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
+            typename std::vector<FanoNodeEdge*>::const_iterator ne_it = outgoing_node_edges.begin();
+            std::vector<FanoNodeEdge*> child_node_edges;
 
-            for (; e_it != outgoing_edges.end(); ++e_it)
+            for (; ne_it != outgoing_node_edges.end(); ++ne_it)
             {
-                if (!((*e_it)->get_edge_tag())) // not traversed back
+                if (!((*ne_it)->get_tag())) // not traversed back
                 {
-                    child_nodes.push_back((*e_it)->get_p_destination());
+                    child_node_edges.push_back(*ne_it);
                 }
             }
 
-            if (child_nodes.size() == 0) // exhausted forward paths
+            if (child_node_edges.size() == 0) // exhausted forward paths
             {
-                DEBUG_OUT(Parent::verbosity > 2, "exhaustion of forward paths at node #" << node_current->get_id() << std::endl);
-                node_current = move_back_from_node_or_loosen_threshold(node_current);
+                DEBUG_OUT(Parent::verbosity > 2, "exhaustion of forward paths at node #" << node_edge_current->get_id() << std::endl);
+                node_edge_current = move_back_from_node_or_loosen_threshold(node_edge_current);
                 continue;
             }
 
-            std::sort(child_nodes.begin(), child_nodes.end(), node_pointer_ordering<FanoNode>);
-            node_successor = *child_nodes.begin(); // best successor
-            DEBUG_OUT(Parent::verbosity > 2, "best successor node #" << node_successor->get_id() << " Ms=" << node_successor->get_path_metric() << std::endl);
+            std::sort(child_node_edges.begin(), child_node_edges.end(), node_edge_pointer_ordering<FanoNodeEdge>);
+            node_edge_successor = *child_node_edges.begin(); // best successor
+            DEBUG_OUT(Parent::verbosity > 2, "best successor node #" << node_edge_successor->get_id() << " Ms=" << node_edge_successor->get_path_metric() << std::endl);
 
-            if (node_successor->get_path_metric() >= cur_threshold) // Ms >= T
+            if (node_edge_successor->get_path_metric() >= cur_threshold) // Ms >= T
             {
                 // move forward:
                 DEBUG_OUT(Parent::verbosity > 2, "forward" << std::endl);
-                FanoNode *node_predecessor = node_current;
-                node_current = node_successor;
+                FanoNodeEdge *node_predecessor = node_edge_current;
+                node_edge_current = node_edge_successor;
 
                 // termination with solution
-                if (node_current->get_depth() == relmat.get_message_length() - 1)
+                if (node_edge_current->get_depth() == relmat.get_message_length() - 1)
                 {
-                	Parent::codeword_score = node_current->get_path_metric();
-                    ParentInternal::back_track(node_current, decoded_message, true); // back track from terminal node to retrieve decoded message
+                	Parent::codeword_score = node_edge_current->get_path_metric();
+                    ParentInternal::back_track(node_edge_current, decoded_message, true); // back track from terminal node to retrieve decoded message
                     solution_found = true;
                     Parent::max_depth++;
 #ifdef _DEBUG
@@ -210,7 +211,7 @@ public:
                 // threshold tightening for the new current node
                 if (node_predecessor->get_path_metric() < cur_threshold + delta_threshold)
                 {
-                    int nb_delta = int((node_current->get_path_metric() - init_threshold) / delta_threshold);
+                    int nb_delta = int((node_edge_current->get_path_metric() - init_threshold) / delta_threshold);
 
                     if (nb_delta < 0)
                     {
@@ -221,15 +222,15 @@ public:
                     	cur_threshold = (nb_delta * delta_threshold) + init_threshold;
                     }
 
-                    DEBUG_OUT(Parent::verbosity > 2, "tightening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl);
+                    DEBUG_OUT(Parent::verbosity > 2, "tightening " << node_edge_current->get_path_metric() << " -> " << cur_threshold << std::endl);
                 }
 
                 // create children nodes from the new current node
-                visit_node_forward(node_current, relmat);
+                visit_node_forward(node_edge_current, relmat);
             }
             else
             {
-                node_current = move_back_from_node_or_loosen_threshold(node_current);
+                node_edge_current = move_back_from_node_or_loosen_threshold(node_edge_current);
             }
         }
 
@@ -270,25 +271,24 @@ public:
 protected:
     typedef CC_SequentialDecoding<T_Register, T_IOSymbol> Parent; //!< Parent class this class inherits from
     typedef CC_SequentialDecodingInternal<T_Register, T_IOSymbol, bool> ParentInternal; //!< Parent class this class inherits from
-    typedef CC_TreeNode<T_IOSymbol, T_Register, bool> FanoNode;   //!< Class of code tree nodes in the Fano algorithm
-    typedef CC_TreeEdge<T_IOSymbol, T_Register, bool> FanoEdge;   //!< Class of code tree edges in the Fano algorithm
+    typedef CC_TreeNodeEdge<T_IOSymbol, T_Register, bool> FanoNodeEdge;   //!< Class of code tree nodes in the Fano algorithm
 
     /**
      * Visit a new node
      * \parm node Node to visit
      * \parm relmat Reliability matrix being used
      */
-    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, bool>* node, const CC_ReliabilityMatrix& relmat)
+    virtual void visit_node_forward(FanoNodeEdge* node_edge, const CC_ReliabilityMatrix& relmat)
     {
         unsigned int n = Parent::encoding.get_n();
-        int forward_depth = node->get_depth() + 1;
+        int forward_depth = node_edge->get_depth() + 1;
         T_IOSymbol out_symbol;
         T_IOSymbol end_symbol;
 
         // return encoder to appropriate state
-        if (node->get_depth() >= 0) // does not concern the root node
+        if (node_edge->get_depth() >= 0) // does not concern the root node_edge
         {
-            Parent::encoding.set_registers(node->get_registers());
+            Parent::encoding.set_registers(node_edge->get_registers());
         }
 
         if ((Parent::tail_zeros) && (forward_depth > relmat.get_message_length()-Parent::encoding.get_m()))
@@ -300,25 +300,23 @@ protected:
             end_symbol = (1<<Parent::encoding.get_k()); // full scan all possible input symbols
         }
 
-        if (node->get_outgoing_edges().size() == 0) // edges are not cached
+        if (node_edge->get_outgoing_node_edges().size() == 0) // edges are not cached
         {
             if ((tree_cache_size > 0) && (effective_node_count >= tree_cache_size)) // if tree cache is used and cache limit reached
             {
-                purge_tree_cache(node); // purge before allocating new nodes
+                purge_tree_cache(node_edge); // purge before allocating new nodes
             }
 
             // loop through assumption for this symbol place and create child nodes
             for (T_IOSymbol in_symbol = 0; in_symbol < end_symbol; in_symbol++)
             {
                 Parent::encoding.encode(in_symbol, out_symbol, in_symbol > 0); // step only for a new symbol place
-                float edge_metric = log2(relmat(out_symbol, forward_depth)) - Parent::edge_bias;
-                float forward_path_metric = edge_metric + node->get_path_metric();
-                FanoEdge *new_edge = new FanoEdge(Parent::edge_count++, in_symbol, out_symbol, edge_metric, node);
-                new_edge->get_edge_tag() = false; // Init traversed back indicator
-                FanoNode *dest_node = new FanoNode(Parent::node_count++, new_edge, forward_path_metric, forward_depth);
-                dest_node->set_registers(Parent::encoding.get_registers());
-                new_edge->set_p_destination(dest_node);
-                node->add_outgoing_edge(new_edge); // add forward edge
+                float edge_metric = ParentInternal::log2(relmat(out_symbol, forward_depth)) - Parent::edge_bias;
+                float forward_path_metric = edge_metric + node_edge->get_path_metric();
+                FanoNodeEdge *next_node_edge = new FanoNodeEdge(Parent::node_count++, node_edge, in_symbol, edge_metric, forward_path_metric, forward_depth);
+                next_node_edge->get_tag() = false; // Init traversed back indicator
+                next_node_edge->set_registers(Parent::encoding.get_registers());
+                node_edge->add_outgoing_node_edge(next_node_edge); // add forward edge
                 effective_node_count++;
             }
         }
@@ -330,69 +328,69 @@ protected:
      * it marks the incoming edge as traversed back
      * \param node_current Node to move backfrom or where to loosen threshold
      */
-    FanoNode *move_back_from_node_or_loosen_threshold(FanoNode *node_current)
+    FanoNodeEdge *move_back_from_node_or_loosen_threshold(FanoNodeEdge *node_edge_current)
     {
-        if (node_current == ParentInternal::root_node) // at root node there are no other options than loosening threshold
+        if (node_edge_current == ParentInternal::root_node) // at root node there are no other options than loosening threshold
         {
             cur_threshold -= delta_threshold;
-            DEBUG_OUT(Parent::verbosity > 2, "loosening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl);
+            DEBUG_OUT(Parent::verbosity > 2, "loosening " << node_edge_current->get_path_metric() << " -> " << cur_threshold << std::endl);
         }
         else
         {
-            FanoNode *node_predecessor = node_current->get_incoming_edge()->get_p_origin();
+            FanoNodeEdge *node_edge_predecessor = node_edge_current->get_incoming_node_edge();
 
-            if (node_predecessor->get_path_metric() >= cur_threshold) // move backward
+            if (node_edge_predecessor->get_path_metric() >= cur_threshold) // move backward
             {
                 DEBUG_OUT(Parent::verbosity > 2, std::cout << "backward" << std::endl);
 
                 if (tree_cache_size == 0) // tree cache is not used
                 {
                     // delete all successor edges and nodes
-                    std::vector<FanoEdge*>& outgoing_edges = node_current->get_outgoing_edges();
-                    typename std::vector<FanoEdge*>::iterator e_it = outgoing_edges.begin();
+                    std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
+                    typename std::vector<FanoNodeEdge*>::iterator ne_it = outgoing_node_edges.begin();
 
-                    for (;e_it != outgoing_edges.end(); ++e_it)
+                    for (;ne_it != outgoing_node_edges.end(); ++ne_it)
                     {
-                        delete *e_it;
+                        delete *ne_it;
                     }
 
-                    effective_node_count -= outgoing_edges.size();
-                    outgoing_edges.clear();
+                    effective_node_count -= outgoing_node_edges.size();
+                    outgoing_node_edges.clear();
                 }
 
                 // mark incoming edge as traversed back
-                if (node_predecessor != ParentInternal::root_node)
+                if (node_edge_predecessor != ParentInternal::root_node)
                 {
-                    node_current->get_incoming_edge()->get_edge_tag() = true;
+                    node_edge_current->get_tag() = true;
                 }
 
                 // move back: change node address to previous node address
-                node_current = node_predecessor;
+                node_edge_current = node_edge_predecessor;
             }
             else // loosen threshold
             {
                 cur_threshold -= delta_threshold;
-                DEBUG_OUT(Parent::verbosity > 2, "loosening " << node_current->get_path_metric() << " -> " << cur_threshold << std::endl);
+                DEBUG_OUT(Parent::verbosity > 2, "loosening " << node_edge_current->get_path_metric() << " -> " << cur_threshold << std::endl);
             }
         }
 
-        return node_current;
+        return node_edge_current;
     }
 
     /**
      * Check if process can continue
      */
-    bool continue_process(FanoNode *node_current, const CC_ReliabilityMatrix& relmat) 
+    bool continue_process(FanoNodeEdge *node_edge_current, const CC_ReliabilityMatrix& relmat)
     {
-        if ((node_current == ParentInternal::root_node) && (nb_moves > 0) && (cur_threshold == root_threshold))
+        if ((node_edge_current == ParentInternal::root_node) && (nb_moves > 0) && (cur_threshold == root_threshold))
         {
-            const std::vector<FanoEdge*>& outgoing_edges = node_current->get_outgoing_edges();
-            typename std::vector<FanoEdge*>::const_iterator e_it = outgoing_edges.begin();
+            const std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
+            typename std::vector<FanoNodeEdge*>::const_iterator ne_it = outgoing_node_edges.begin();
             bool children_open = true;
 
-            for (; e_it != outgoing_edges.end(); ++e_it)
+            for (; ne_it != outgoing_node_edges.end(); ++ne_it)
             {
-                if ((*e_it)->get_edge_tag()) // traversed back
+                if ((*ne_it)->get_tag()) // traversed back
                 {
                     children_open = false;
                     break;
@@ -407,11 +405,11 @@ protected:
                     Parent::reset();                        // reset but do not delete root node
                     cur_threshold = init_threshold;
                     solution_found = false;
-                    ParentInternal::root_node->delete_outgoing_edges(); // effectively resets the root node without destroying it
+                    ParentInternal::root_node->delete_outgoing_node_edges(); // effectively resets the root node without destroying it
                     Parent::node_count = 1;
                     effective_node_count = 1;
                     nb_moves = 0;
-                    visit_node_forward(node_current, relmat); // visit root node again
+                    visit_node_forward(node_edge_current, relmat); // visit root node again
                     std::cerr << "Loop condition detected, restart with init threshold = " << init_threshold << std::endl;
                     return true;
                 }
@@ -439,33 +437,33 @@ protected:
     }
 
     /**
-     * Purge tree cache from a node. Keep only the current path and path nodes immediate successors
+     * Purge tree cache from a node. Keep only the current path to the node and path nodes immediate successors
      * \param node The node to purge from
      */
-    void purge_tree_cache(FanoNode *node)
+    void purge_tree_cache(FanoNodeEdge *node_edge)
     {
         bool node_terminal = true;
         unsigned int remaining_nodes = 0;
 
-        while (node != ParentInternal::root_node)
+        while (node_edge != ParentInternal::root_node)
         {
-            FanoNode *node_predecessor = node->get_incoming_edge()->get_p_origin();
-            std::vector<FanoEdge*>& outgoing_edges = node_predecessor->get_outgoing_edges();
-            typename std::vector<FanoEdge*>::iterator e_it = outgoing_edges.begin();
+            FanoNodeEdge *node_edge_predecessor = node_edge->get_incoming_node_edge();
+            std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_predecessor->get_outgoing_node_edges();
+            typename std::vector<FanoNodeEdge*>::iterator ne_it = outgoing_node_edges.begin();
 
-            for (;e_it != outgoing_edges.end(); ++e_it)
+            for (;ne_it != outgoing_node_edges.end(); ++ne_it)
             {
-                FanoNode *node_sibling = (*e_it)->get_p_destination();
+                FanoNodeEdge *node_edge_sibling = (*ne_it);
 
-                if (node_terminal || (node_sibling != node))
+                if (node_terminal || (node_edge_sibling != node_edge))
                 {
-                    (*e_it)->get_p_destination()->delete_outgoing_edges();
+                    (*ne_it)->delete_outgoing_node_edges();
                 }
 
                 remaining_nodes++;
             }
 
-            node = node_predecessor;
+            node_edge = node_edge_predecessor;
             node_terminal = false;
         }
 

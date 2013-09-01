@@ -25,8 +25,6 @@
 #include "CC_Encoding.h"
 #include "CC_StackDecoding.h"
 #include "CC_FanoDecoding.h"
-#include "CC_TreeNode.h"
-#include "CC_TreeEdge.h"
 #include "CCSoft_Exception.h"
 #include "URandom.h"
 
@@ -425,7 +423,7 @@ int main(int argc, char *argv[])
             }
             else if (options.algorithm_type == Options::Algorithm_FanoLike)
             {
-                cc_decoding = new ccsoft::CC_FanoDecoding<unsigned int, unsigned int>(options.k_constraints, 
+                cc_decoding = new ccsoft::CC_FanoDecoding<unsigned int, unsigned int>(options.k_constraints,
                         options.generator_polys,
                         options.fano_init_metric,
                         options.fano_delta_metric,

@@ -37,7 +37,7 @@ class CC_TreeNode;
  * \brief An edge of the code tree
  * \tparam T_IOSymbol Type of the input and output symbols
  * \tparam T_Register Type of the encoder internal registers
- * \tparam T_Register Type of the edge tag
+ * \tparam T_EdgeTag Type of the edge tag
  */
 template<typename T_IOSymbol, typename T_Register, typename T_EdgeTag>
 class CC_TreeEdge

@@ -18,14 +18,14 @@
  Foundation, Inc., 51 Franklin Street, Boston, MA  02110-1301  USA
 
  Convolutional soft-decision sequential decoder generic (virtual) class
+ Based on node+edge combination in the code tree
 
  */
 #ifndef __CC_SEQUENTIAL_DECODING_H__
 #define __CC_SEQUENTIAL_DECODING_H__
 
 #include "CC_Encoding.h"
-#include "CC_TreeEdge.h"
-#include "CC_TreeNode.h"
+#include "CC_TreeNodeEdge.h"
 #include "CC_ReliabilityMatrix.h"
 #include "CC_TreeGraphviz.h"
 
@@ -39,25 +39,20 @@ namespace ccsoft
 {
 
 /**
- * Base 2 logarithm
- */
-float log2(float x);
-
-/**
  * \brief class used for node ordering
  */
-class NodeOrdering
+class NodeEdgeOrdering
 {
 public:
-    NodeOrdering(float _path_metric, unsigned int _node_id) :
+	NodeEdgeOrdering(float _path_metric, unsigned int _node_id) :
         path_metric(_path_metric),
         node_id(_node_id)
     {}
 
-    ~NodeOrdering()
+    ~NodeEdgeOrdering()
     {}
 
-    bool operator>(const NodeOrdering& other) const
+    bool operator>(const NodeEdgeOrdering& other) const
     {
         if (path_metric == other.path_metric)
         {
@@ -73,8 +68,8 @@ public:
     unsigned int node_id;
 };
 
-template<typename T_Node>
-bool node_pointer_ordering(T_Node* n1, T_Node* n2)
+template<typename T_NodeEdge>
+bool node_edge_pointer_ordering(T_NodeEdge* n1, T_NodeEdge* n2)
 {
     if (n1->get_path_metric() == n2->get_path_metric())
     {
@@ -115,7 +110,6 @@ public:
                 cur_depth(-1),
                 max_depth(0),
                 node_count(0),
-                edge_count(0),
                 tail_zeros(true),
                 edge_bias(0.0),
                 verbosity(0)
@@ -176,7 +170,6 @@ public:
     void reset()
     {
         node_count = 0;
-        edge_count = 0;
         codeword_score = 0.0;
         cur_depth = -1;
         max_depth = 0;
@@ -284,7 +277,6 @@ protected:
     int cur_depth;            //!< Current depth for the encoder
     int max_depth;            //!< Maximum depth reached in the graph
     unsigned int node_count;  //!< Count of nodes in the code tree
-    unsigned int edge_count;  //!< Count of edges in the code tree
     bool tail_zeros;          //!< True if tail of m-1 zeros in the message are assumed. This is the default option.
     float edge_bias;          //!< Edge metric bias subtracted from log2 of reliability of the edge
     unsigned int verbosity;   //!< Verbosity level
@@ -292,13 +284,13 @@ protected:
 
 /**
  * \brief Convolutional soft-decision sequential decoder generic (virtual) class for algorithm internal use.
- * It is tainted by the type of code tree edge tag that is algorithm dependant. It contains the code tree root node and some 
+ * It is tainted by the type of code tree node+edge tag that is algorithm dependant. It contains the code tree root node and some
  * common methods.
  * \tparam T_Register Type of the encoder internal registers
  * \tparam T_IOSymbol Type of the input and output symbols
- * \tparam T_EdgeTag Type of the code tree edge tag
+ * \tparam T_EdgeTag Type of the code tree node+edge tag
  */
-template<typename T_Register, typename T_IOSymbol, typename T_EdgeTag>
+template<typename T_Register, typename T_IOSymbol, typename T_Tag>
 class CC_SequentialDecodingInternal
 {
 public:
@@ -341,11 +333,19 @@ public:
 
 protected:
     /**
+     * Base 2 logarithm
+     */
+    float log2(float x)
+    {
+        return log(x)/log(2.0);
+    }
+
+    /**
      * Initialize process at the root node
      */
     void init_root()
     {
-        root_node = new CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>(0, 0, 0.0, -1);
+        root_node = new CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag>(0, 0, 0, 0.0, 0.0, -1);
     }
 
     /**
@@ -353,7 +353,7 @@ protected:
      * \param node Node to visit
      * \param relmat Reliability matrix reference
      */
-    virtual void visit_node_forward(CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>* node, const CC_ReliabilityMatrix& relmat) = 0;
+    virtual void visit_node_forward(CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag>* node, const CC_ReliabilityMatrix& relmat) = 0;
 
     /**
      * Back track from a node. When the node is the selected terminal node it is used to retrieve the decoded message
@@ -361,17 +361,24 @@ protected:
      * \param decoded_message Symbols corresponding to the edge ordered from root node to the given node
      * \param mark_nodes Mark the nodes along the path
      */
-    void back_track(CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag>* node, std::vector<T_IOSymbol>& decoded_message, bool mark_nodes = false)
+    void back_track(CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag>* node_edge, std::vector<T_IOSymbol>& decoded_message, bool mark_nodes = false)
     {
         std::vector<T_IOSymbol> reversed_message;
-        CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *cur_node = node;
-        CC_TreeEdge<T_IOSymbol, T_Register, T_EdgeTag> *incoming_edge;
+        CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag> *cur_node_edge = node_edge;
+        CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag> *incoming_node_edge;
 
-        while (incoming_edge = (cur_node->get_incoming_edge()))
+        reversed_message.push_back(cur_node_edge->get_in_symbol());
+
+        while (incoming_node_edge = (cur_node_edge->get_incoming_node_edge()))
         {
-            cur_node->set_on_final_path(mark_nodes);
-            reversed_message.push_back(incoming_edge->get_in_symbol());
-            cur_node = incoming_edge->get_p_origin();
+            cur_node_edge->set_on_final_path(mark_nodes);
+
+            if (incoming_node_edge->get_depth() >= 0) // don't take root node
+            {
+                reversed_message.push_back(incoming_node_edge->get_in_symbol());
+            }
+
+            cur_node_edge = incoming_node_edge;
         }
 
         decoded_message.resize(reversed_message.size());
@@ -384,10 +391,10 @@ protected:
      */
     void print_dot_internal(std::ostream& os)
     {
-        CC_TreeGraphviz<T_IOSymbol, T_Register, T_EdgeTag>::create_dot(root_node, os);
+        CC_TreeGraphviz<T_IOSymbol, T_Register, T_Tag>::create_dot(root_node, os);
     }
     
-    CC_TreeNode<T_IOSymbol, T_Register, T_EdgeTag> *root_node; //!< Root node
+    CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag> *root_node; //!< Root node
 };
 
 
