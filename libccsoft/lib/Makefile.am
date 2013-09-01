@@ -12,10 +12,12 @@ library_include_HEADERS = \
 	CCSoft_Exception.h \
 	CC_Encoding.h \
 	CC_SequentialDecoding.h \
+	CC_SequentialDecodingInternal.h \
 	CC_FanoDecoding.h \
 	CC_StackDecoding.h \
 	CC_TreeEdge.h \
     CC_TreeNode.h \
     CC_TreeNodeEdge.h \
+    CC_TreeNodeEdge_FA.h \
     CC_TreeGraphviz.h \
     Debug.h

@@ -21,10 +21,10 @@
  Based on node+edge combination in the code tree
 
  */
-#ifndef __CC_SEQUENTIAL_DECODING_H__
-#define __CC_SEQUENTIAL_DECODING_H__
+#ifndef __CC_SEQUENTIAL_DECODING_FA_H__
+#define __CC_SEQUENTIAL_DECODING_FA_H__
 
-#include "CC_Encoding.h"
+#include "CC_Encoding_FA.h"
 #include "CC_ReliabilityMatrix.h"
 
 #include <cmath>
@@ -81,11 +81,14 @@ bool node_edge_pointer_ordering(T_NodeEdge* n1, T_NodeEdge* n2)
 
 /**
  * \brief Convolutional soft-decision sequential decoder generic (virtual) class. This is the public interface.
+ * This version uses a fixed array to store registers.
+ * N_k template parameter gives the size of the input symbol (k parameter) and therefore the number of registers.
  * \tparam T_Register Type of the encoder internal registers
  * \tparam T_IOSymbol Type of the input and output symbols
+ * \tparam N_k Size of an input symbol in bits (k parameter)
  */
-template<typename T_Register, typename T_IOSymbol>
-class CC_SequentialDecoding
+template<typename T_Register, typename T_IOSymbol, unsigned int N_k>
+class CC_SequentialDecoding_FA
 {
 public:
     /**
@@ -97,7 +100,7 @@ public:
      * the right hand side, or least significant position of the internal registers. Therefore the given polynomial representation
      * of generators should follow the same convention.
      */
-	CC_SequentialDecoding(const std::vector<unsigned int>& constraints,
+	CC_SequentialDecoding_FA(const std::vector<unsigned int>& constraints,
             const std::vector<std::vector<T_Register> >& genpoly_representations) :
                 encoding(constraints, genpoly_representations),
                 use_metric_limit(false),
@@ -116,7 +119,7 @@ public:
 	/**
 	 * Destructor
 	 */
-	virtual ~CC_SequentialDecoding()
+	virtual ~CC_SequentialDecoding_FA()
 	{
 	}
 
@@ -177,7 +180,7 @@ public:
     /**
      * Get encoding object reference
      */
-    CC_Encoding<T_Register, T_IOSymbol>& get_encoding()
+    CC_Encoding_FA<T_Register, T_IOSymbol, N_k>& get_encoding()
     {
         return encoding;
     }
@@ -266,7 +269,7 @@ public:
     virtual bool decode(const CC_ReliabilityMatrix& relmat, std::vector<T_IOSymbol>& decoded_message) = 0;
 
 protected:
-    CC_Encoding<T_Register, T_IOSymbol> encoding;   //!< Convolutional encoding object
+    CC_Encoding_FA<T_Register, T_IOSymbol, N_k> encoding;   //!< Convolutional encoding object
     bool use_metric_limit;    //!< True if a give up path metric threshold is used
     float metric_limit;       //!< The give up path metric threshold
     bool use_node_limit;      //!< Stop above number of nodes threshold
@@ -283,4 +286,4 @@ protected:
 } // namespace ccsoft
 
 
-#endif // __CC_SEQUENTIAL_DECODING_H__
+#endif // __CC_SEQUENTIAL_DECODING_FA_H__

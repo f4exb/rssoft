@@ -20,15 +20,17 @@
  Convolutional soft-decision decoder based on the stack or Zigangirov-Jelinek
  (ZJ) algorithm. Uses the node+edge combination in the code tree.
 
- */
-#ifndef __CC_STACK_DECODING_H__
-#define __CC_STACK_DECODING_H__
+ Uses fixed arrays
 
-#include "CC_SequentialDecoding.h"
-#include "CC_SequentialDecodingInternal.h"
-#include "CC_Encoding.h"
+ */
+#ifndef __CC_STACK_DECODING_FA_H__
+#define __CC_STACK_DECODING_FA_H__
+
+#include "CC_SequentialDecoding_FA.h"
+#include "CC_SequentialDecodingInternal_FA.h"
+#include "CC_Encoding_FA.h"
 #include "CCSoft_Exception.h"
-#include "CC_TreeNodeEdge.h"
+#include "CC_TreeNodeEdge_FA.h"
 #include "CC_ReliabilityMatrix.h"
 
 #include <cmath>
@@ -42,11 +44,16 @@ namespace ccsoft
 
 /**
  * \brief The Stack Decoding class with node+edge combination
+ * This version uses fixed arrays to store registers and forward node+edges pointers.
+ * N_k template parameter gives the size of the input symbol (k parameter) and therefore the number of registers.
+ * There are (1<<N_k) forward node+edges.
  * \tparam T_Register Type of the encoder internal registers
  * \tparam T_IOSymbol Type of the input and output symbols
+ * \tparam N_k Input symbol size in bits (k parameter)
+ * \tparam N_k Size of an input symbol in bits (k parameter)
  */
-template<typename T_Register, typename T_IOSymbol>
-class CC_StackDecoding : public CC_SequentialDecoding<T_Register, T_IOSymbol>, public CC_SequentialDecodingInternal<T_Register, T_IOSymbol, CC_TreeNodeEdgeTag_Empty>
+template<typename T_Register, typename T_IOSymbol, unsigned int N_k>
+class CC_StackDecoding_FA : public CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k>, public CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdge_FA_Tag_Empty, N_k>
 {
 public:
     /**
@@ -58,16 +65,16 @@ public:
      * the right hand side, or least significant position of the internal registers. Therefore the given polynomial representation
      * of generators should follow the same convention.
      */
-	CC_StackDecoding(const std::vector<unsigned int>& constraints,
+	CC_StackDecoding_FA(const std::vector<unsigned int>& constraints,
             const std::vector<std::vector<T_Register> >& genpoly_representations) :
-                CC_SequentialDecoding<T_Register, T_IOSymbol>(constraints, genpoly_representations),
-                CC_SequentialDecodingInternal<T_Register, T_IOSymbol, CC_TreeNodeEdgeTag_Empty>()
+                CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k>(constraints, genpoly_representations),
+                CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdge_FA_Tag_Empty, N_k>()
     {}
 
     /**
      * Destructor. Does a final garbage collection
      */
-    virtual ~CC_StackDecoding()
+    virtual ~CC_StackDecoding_FA()
     {}
 
     /**
@@ -178,16 +185,16 @@ public:
     }
 
 protected:
-    typedef CC_SequentialDecoding<T_Register, T_IOSymbol> Parent;                                       //!< Parent class this class inherits from
-    typedef CC_SequentialDecodingInternal<T_Register, T_IOSymbol, CC_TreeNodeEdgeTag_Empty> ParentInternal; //!< Parent class this class inherits from
-    typedef CC_TreeNodeEdge<T_IOSymbol, T_Register, CC_TreeNodeEdgeTag_Empty> StackNodeEdge; //!< Class of code tree nodes in the stack algorithm
+    typedef CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k> Parent;                                       //!< Parent class this class inherits from
+    typedef CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdge_FA_Tag_Empty, N_k> ParentInternal; //!< Parent class this class inherits from
+    typedef CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, CC_TreeNodeEdge_FA_Tag_Empty, N_k> StackNodeEdge; //!< Class of code tree nodes in the stack algorithm
 
     /**
      * Visit a new node
      * \node Node+edge combo to visit
      * \relmat Reliability matrix being used
      */
-    virtual void visit_node_forward(CC_TreeNodeEdge<T_IOSymbol, T_Register, CC_TreeNodeEdgeTag_Empty>* node_edge, const CC_ReliabilityMatrix& relmat)
+    virtual void visit_node_forward(CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, CC_TreeNodeEdge_FA_Tag_Empty, N_k>* node_edge, const CC_ReliabilityMatrix& relmat)
     {
         int forward_depth = node_edge->get_depth() + 1;
         T_IOSymbol out_symbol;
@@ -219,7 +226,7 @@ protected:
             {
                 StackNodeEdge *next_node_edge = new StackNodeEdge(Parent::node_count, node_edge, in_symbol, edge_metric, forward_path_metric, forward_depth);
                 next_node_edge->set_registers(Parent::encoding.get_registers());
-                node_edge->add_outgoing_node_edge(next_node_edge); // add forward edge+node combo
+                node_edge->set_outgoing_node_edge(next_node_edge, in_symbol); // add forward edge+node combo
                 node_edge_stack[NodeEdgeOrdering(forward_path_metric, Parent::node_count)] = next_node_edge;
                 //std::cout << "->" << std::dec << node_count << ":" << forward_depth << " (" << (unsigned int) in_symbol << "," << (unsigned int) out_symbol << "): " << forward_path_metric << std::endl;
                 Parent::node_count++;

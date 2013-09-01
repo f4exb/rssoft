@@ -24,14 +24,14 @@
  Uses a node+edge combo code tree representation‎
 
  */
-#ifndef __CC_FANO_DECODING_H__
-#define __CC_FANO_DECODING_H__
+#ifndef __CC_FANO_DECODING_FA_H__
+#define __CC_FANO_DECODING_FA_H__
 
-#include "CC_SequentialDecoding.h"
-#include "CC_SequentialDecodingInternal.h"
-#include "CC_Encoding.h"
+#include "CC_SequentialDecoding_FA.h"
+#include "CC_SequentialDecodingInternal_FA.h"
+#include "CC_Encoding_FA.h"
 #include "CCSoft_Exception.h"
-#include "CC_TreeNodeEdge.h"
+#include "CC_TreeNodeEdge_FA.h"
 #include "CC_ReliabilityMatrix.h"
 #include "Debug.h"
 
@@ -46,11 +46,15 @@ namespace ccsoft
 
 /**
  * \brief The Fano like Decoding class. Tag is a boolean used as the traversed back indicator.
+ * This version uses fixed arrays to store registers and forward node+edges pointers.
+ * N_k template parameter gives the size of the input symbol (k parameter) and therefore the number of registers.
+ * There are (1<<N_k) forward node+edges.
  * \tparam T_Register Type of the encoder internal registers
  * \tparam T_IOSymbol Type of the input and output symbols
+ * \tparam N_k Size of an input symbol in bits (k parameter)
  */
-template<typename T_Register, typename T_IOSymbol>
-class CC_FanoDecoding : public CC_SequentialDecoding<T_Register, T_IOSymbol> ,public CC_SequentialDecodingInternal<T_Register, T_IOSymbol, bool>
+template<typename T_Register, typename T_IOSymbol, unsigned int N_k>
+class CC_FanoDecoding_FA : public CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k> ,public CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, bool, N_k>
 {
 public:
     /**
@@ -66,14 +70,14 @@ public:
      * \param _tree_cache_size Tree cache maximum size in number of nodes (0 if not used)
      * \param _delta_init_threshold: Delta of path metric that is applied when restarting with a lower initial threshold (0 if not used)
      */
-	CC_FanoDecoding(const std::vector<unsigned int>& constraints,
+	CC_FanoDecoding_FA(const std::vector<unsigned int>& constraints,
             const std::vector<std::vector<T_Register> >& genpoly_representations,
             float _init_threshold,
             float _delta_threshold,
             unsigned int _tree_cache_size = 0,
             float _delta_init_threshold = 0.0) :
-                CC_SequentialDecoding<T_Register, T_IOSymbol>(constraints, genpoly_representations),
-                CC_SequentialDecodingInternal<T_Register, T_IOSymbol, bool>(),
+                CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k>(constraints, genpoly_representations),
+                CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, bool, N_k>(),
                 init_threshold(_init_threshold),
                 cur_threshold(_init_threshold),
                 root_threshold(_init_threshold),
@@ -89,7 +93,7 @@ public:
     /**
      * Destructor. Does a final garbage collection
      */
-    virtual ~CC_FanoDecoding()
+    virtual ~CC_FanoDecoding_FA()
     {}
 
     /**
@@ -164,13 +168,13 @@ public:
             }
 
             nb_moves++;
-            const std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
-            typename std::vector<FanoNodeEdge*>::const_iterator ne_it = outgoing_node_edges.begin();
+            const std::array<FanoNodeEdge*, (1<<N_k)>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
+            typename std::array<FanoNodeEdge*, (1<<N_k)>::const_iterator ne_it = outgoing_node_edges.begin();
             std::vector<FanoNodeEdge*> child_node_edges;
 
             for (; ne_it != outgoing_node_edges.end(); ++ne_it)
             {
-                if (!((*ne_it)->get_tag())) // not traversed back
+                if ((*ne_it) && !((*ne_it)->get_tag())) // not traversed back
                 {
                     child_node_edges.push_back(*ne_it);
                 }
@@ -269,9 +273,9 @@ public:
     }
 
 protected:
-    typedef CC_SequentialDecoding<T_Register, T_IOSymbol> Parent; //!< Parent class this class inherits from
-    typedef CC_SequentialDecodingInternal<T_Register, T_IOSymbol, bool> ParentInternal; //!< Parent class this class inherits from
-    typedef CC_TreeNodeEdge<T_IOSymbol, T_Register, bool> FanoNodeEdge;   //!< Class of code tree nodes in the Fano algorithm
+    typedef CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k> Parent; //!< Parent class this class inherits from
+    typedef CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, bool, N_k> ParentInternal; //!< Parent class this class inherits from
+    typedef CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, bool, N_k> FanoNodeEdge;   //!< Class of code tree nodes in the Fano algorithm
 
     /**
      * Visit a new node
@@ -300,7 +304,7 @@ protected:
             end_symbol = (1<<Parent::encoding.get_k()); // full scan all possible input symbols
         }
 
-        if (node_edge->get_outgoing_node_edges().size() == 0) // edges are not cached
+        if (!node_edge->valid_outgoing_node_edges(end_symbol)) // edges are not cached
         {
             if ((tree_cache_size > 0) && (effective_node_count >= tree_cache_size)) // if tree cache is used and cache limit reached
             {
@@ -316,7 +320,7 @@ protected:
                 FanoNodeEdge *next_node_edge = new FanoNodeEdge(Parent::node_count++, node_edge, in_symbol, edge_metric, forward_path_metric, forward_depth);
                 next_node_edge->get_tag() = false; // Init traversed back indicator
                 next_node_edge->set_registers(Parent::encoding.get_registers());
-                node_edge->add_outgoing_node_edge(next_node_edge); // add forward edge
+                node_edge->set_outgoing_node_edge(next_node_edge, in_symbol); // add forward edge
                 effective_node_count++;
             }
         }
@@ -346,8 +350,8 @@ protected:
                 if (tree_cache_size == 0) // tree cache is not used
                 {
                     // delete all successor edges and nodes
-                    std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
-                    typename std::vector<FanoNodeEdge*>::iterator ne_it = outgoing_node_edges.begin();
+                    std::array<FanoNodeEdge*, (1<<N_k)>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
+                    typename std::array<FanoNodeEdge*, (1<<N_k)>::iterator ne_it = outgoing_node_edges.begin();
 
                     for (;ne_it != outgoing_node_edges.end(); ++ne_it)
                     {
@@ -355,7 +359,7 @@ protected:
                     }
 
                     effective_node_count -= outgoing_node_edges.size();
-                    outgoing_node_edges.clear();
+                    outgoing_node_edges.fill(0);
                 }
 
                 // mark incoming edge as traversed back
@@ -384,8 +388,8 @@ protected:
     {
         if ((node_edge_current == ParentInternal::root_node) && (nb_moves > 0) && (cur_threshold == root_threshold))
         {
-            const std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
-            typename std::vector<FanoNodeEdge*>::const_iterator ne_it = outgoing_node_edges.begin();
+            const std::array<FanoNodeEdge*, (1<<N_k)>& outgoing_node_edges = node_edge_current->get_outgoing_node_edges();
+            typename std::array<FanoNodeEdge*, (1<<N_k)>::const_iterator ne_it = outgoing_node_edges.begin();
             bool children_open = true;
 
             for (; ne_it != outgoing_node_edges.end(); ++ne_it)
@@ -448,8 +452,8 @@ protected:
         while (node_edge != ParentInternal::root_node)
         {
             FanoNodeEdge *node_edge_predecessor = node_edge->get_incoming_node_edge();
-            std::vector<FanoNodeEdge*>& outgoing_node_edges = node_edge_predecessor->get_outgoing_node_edges();
-            typename std::vector<FanoNodeEdge*>::iterator ne_it = outgoing_node_edges.begin();
+            std::array<FanoNodeEdge*, (1<<N_k)>& outgoing_node_edges = node_edge_predecessor->get_outgoing_node_edges();
+            typename std::array<FanoNodeEdge*, (1<<N_k)>::iterator ne_it = outgoing_node_edges.begin();
 
             for (;ne_it != outgoing_node_edges.end(); ++ne_it)
             {
@@ -488,4 +492,4 @@ protected:
 
 } // namespace ccsoft
 
-#endif // __CC_FANO_DECODING_H__
+#endif // __CC_FANO_DECODING_FA_H__
