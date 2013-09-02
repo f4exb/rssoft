@@ -359,7 +359,8 @@ protected:
                     }
 
                     effective_node_count -= outgoing_node_edges.size();
-                    outgoing_node_edges.fill(0);
+                    std::fill(outgoing_node_edges.begin(), outgoing_node_edges.end(), (FanoNodeEdge*) 0);
+                    //outgoing_node_edges.fill(0);
                 }
 
                 // mark incoming edge as traversed back
@@ -457,14 +458,17 @@ protected:
 
             for (;ne_it != outgoing_node_edges.end(); ++ne_it)
             {
-                FanoNodeEdge *node_edge_sibling = (*ne_it);
-
-                if (node_terminal || (node_edge_sibling != node_edge))
+                if (*ne_it) // if using trailing zeros the corresponding edges for input symbol not zero are not constructed
                 {
-                    (*ne_it)->delete_outgoing_node_edges();
-                }
+                    FanoNodeEdge *node_edge_sibling = (*ne_it);
 
-                remaining_nodes++;
+                    if (node_terminal || (node_edge_sibling != node_edge))
+                    {
+                        (*ne_it)->delete_outgoing_node_edges();
+                    }
+
+                    remaining_nodes++;
+                }
             }
 
             node_edge = node_edge_predecessor;

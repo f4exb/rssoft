@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <array>
+#include <algorithm>
 
 namespace ccsoft
 {
@@ -76,7 +77,7 @@ public:
                 depth(_depth),
                 on_final_path(false)
     {
-	    p_outgoing_node_edges.fill(0);
+        clear_outgoing_edges();
     }
 
 	/**
@@ -113,7 +114,7 @@ public:
             }
         }
 
-        p_outgoing_node_edges.fill(0);
+        clear_outgoing_edges();
     }
 
     /**
@@ -297,6 +298,12 @@ public:
 
 
 protected:
+    void clear_outgoing_edges()
+    {
+        std::fill(p_outgoing_node_edges.begin(), p_outgoing_node_edges.end(), (CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k>*) 0);
+        //p_outgoing_node_edges.fill(0);
+    }
+
     unsigned int id; //!< Node-edge's unique ID
     std::array<CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k>*, (1<<N_k)> p_outgoing_node_edges; //!< Outgoing edges+node pointers
     //std::vector<CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag>*> p_outgoing_node_edges; //!< Outgoing edges+node pointers

@@ -29,6 +29,7 @@
 #include <vector>
 #include <iostream>
 #include <array>
+#include <algorithm>
 
 namespace ccsoft
 {
@@ -119,7 +120,7 @@ public:
             throw CCSoft_Exception("Generator polynomial representations size error");
         }
 
-        registers.fill(0);
+        clear();
         unsigned int min_nb_outputs = genpoly_representations[0].size();
 
         for (unsigned int ci=0; ci < constraints.size(); ci++)
@@ -166,7 +167,8 @@ public:
      */
     void clear()
     {
-        registers.fill(0);
+        std::fill(registers.begin(), registers.end(), 0);
+        //registers.fill(0);
     }
 
     //=============================================================================================
