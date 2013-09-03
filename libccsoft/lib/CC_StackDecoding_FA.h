@@ -53,7 +53,7 @@ namespace ccsoft
  * \tparam N_k Size of an input symbol in bits (k parameter)
  */
 template<typename T_Register, typename T_IOSymbol, unsigned int N_k>
-class CC_StackDecoding_FA : public CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k>, public CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdge_FA_Tag_Empty, N_k>
+class CC_StackDecoding_FA : public CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k>, public CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdgeTag_Empty, N_k>
 {
 public:
     /**
@@ -68,7 +68,7 @@ public:
 	CC_StackDecoding_FA(const std::vector<unsigned int>& constraints,
             const std::vector<std::vector<T_Register> >& genpoly_representations) :
                 CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k>(constraints, genpoly_representations),
-                CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdge_FA_Tag_Empty, N_k>()
+                CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdgeTag_Empty, N_k>()
     {}
 
     /**
@@ -186,15 +186,15 @@ public:
 
 protected:
     typedef CC_SequentialDecoding_FA<T_Register, T_IOSymbol, N_k> Parent;                                       //!< Parent class this class inherits from
-    typedef CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdge_FA_Tag_Empty, N_k> ParentInternal; //!< Parent class this class inherits from
-    typedef CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, CC_TreeNodeEdge_FA_Tag_Empty, N_k> StackNodeEdge; //!< Class of code tree nodes in the stack algorithm
+    typedef CC_SequentialDecodingInternal_FA<T_Register, T_IOSymbol, CC_TreeNodeEdgeTag_Empty, N_k> ParentInternal; //!< Parent class this class inherits from
+    typedef CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, CC_TreeNodeEdgeTag_Empty, N_k> StackNodeEdge; //!< Class of code tree nodes in the stack algorithm
 
     /**
      * Visit a new node
      * \node Node+edge combo to visit
      * \relmat Reliability matrix being used
      */
-    virtual void visit_node_forward(CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, CC_TreeNodeEdge_FA_Tag_Empty, N_k>* node_edge, const CC_ReliabilityMatrix& relmat)
+    virtual void visit_node_forward(CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, CC_TreeNodeEdgeTag_Empty, N_k>* node_edge, const CC_ReliabilityMatrix& relmat)
     {
         int forward_depth = node_edge->get_depth() + 1;
         T_IOSymbol out_symbol;

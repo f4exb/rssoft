@@ -28,16 +28,15 @@
 #ifndef __CC_TREE_NODE_EDGE_FA_H__
 #define __CC_TREE_NODE_EDGE_FA_H__
 
+#include "CC_TreeNodeEdge_base.h"
+#include "CC_EncodingRegisters_FA.h"
+
 #include <vector>
 #include <array>
 #include <algorithm>
 
 namespace ccsoft
 {
-
-class CC_TreeNodeEdge_FA_Tag_Empty
-{
-};
 
 /**
  * \brief Represents a node and its incoming edge in the code tree
@@ -50,7 +49,7 @@ class CC_TreeNodeEdge_FA_Tag_Empty
  * \tparam N_k Input symbol size in bits (k parameter)
  */
 template<typename T_IOSymbol, typename T_Register, typename T_Tag, unsigned int N_k>
-class CC_TreeNodeEdge_FA
+class CC_TreeNodeEdge_FA : public CC_TreeNodeEdge_base<T_IOSymbol, T_Tag>, public CC_EncodingRegisters_FA<T_Register, N_k>
 {
 
 public:
@@ -69,13 +68,8 @@ public:
             float _incoming_edge_metric,
             float _path_metric,
             int _depth) :
-                id(_id),
-                p_incoming_node_edge(_p_incoming_node_edge),
-                in_symbol(_in_symbol),
-                incoming_edge_metric(_incoming_edge_metric),
-                path_metric(_path_metric),
-                depth(_depth),
-                on_final_path(false)
+                CC_TreeNodeEdge_base<T_IOSymbol, T_Tag>(_id, _in_symbol, _incoming_edge_metric, _path_metric, _depth),
+                p_incoming_node_edge(_p_incoming_node_edge)
     {
         clear_outgoing_edges();
     }
@@ -161,142 +155,7 @@ public:
     {
         return p_incoming_node_edge;
     }
-
-    /**
-     * Get path metric to the node
-     */
-    float get_path_metric() const
-    {
-        return path_metric;
-    }
-
-    /**
-     * Get the depth of the node
-     */
-    int get_depth() const
-    {
-        return depth;
-    }
-
-    /**
-     * Get node id
-     */
-    unsigned int get_id() const
-    {
-        return id;
-    }
-
-    /**
-     * For ordering by increasing path metric
-     */
-    bool operator<(const CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k>& other) const
-    {
-        return path_metric < other.path_metric;
-    }
-
-    /**
-     * For ordering by decreasing path metric
-     */
-    bool operator>(const CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k>& other) const
-    {
-        return path_metric > other.path_metric;
-    }
-
-    /**
-     * Get saved encoder registers reference
-     */
-    const std::array<T_Register, N_k>& get_registers() const
-    {
-        return registers;
-    }
-
-    /**
-     * Save encoder registers
-     */
-    void set_registers(const std::array<T_Register, N_k>& _registers)
-    {
-        registers = _registers;
-    }
-
-    /**
-     * Set the "on final path" marker
-     */
-    void set_on_final_path(bool _on_final_path = true)
-    {
-        on_final_path = _on_final_path;
-    }
-
-    /**
-     * Test the "on final path" marker
-     */
-    bool is_on_final_path()
-    {
-        return on_final_path;
-    }
-
-    /**
-     * Input symbol getter
-     */
-    const T_IOSymbol& get_in_symbol() const
-    {
-        return in_symbol;
-    }
-
-    /**
-     * Incoming edge metric getter
-     */
-    float get_incoming_metric() const
-    {
-        return incoming_edge_metric;
-    }
-
-    /**
-     * R/O reference to tag
-     */
-    const T_Tag& get_tag() const
-    {
-        return tag;
-    }
-
-    /**
-     * R/W reference to tag
-     */
-    T_Tag& get_tag()
-    {
-        return tag;
-    }
-
-    /**
-     * Ordering - lesser
-     */
-    bool operator<(const CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k>& other)
-    {
-        if (path_metric == other.path_metric)
-        {
-            return id < other.id;
-        }
-        else
-        {
-            return path_metric < other.path_metric;
-        }
-    }
-
-    /**
-     * Ordering - greater
-     */
-    bool operator>(const CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k>& other)
-    {
-        if (path_metric == other.path_metric)
-        {
-            return id > other.id;
-        }
-        else
-        {
-            return path_metric > other.path_metric;
-        }
-    }
-
-
+    
 protected:
     void clear_outgoing_edges()
     {
@@ -304,17 +163,8 @@ protected:
         //p_outgoing_node_edges.fill(0);
     }
 
-    unsigned int id; //!< Node-edge's unique ID
     std::array<CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k>*, (1<<N_k)> p_outgoing_node_edges; //!< Outgoing edges+node pointers
-    //std::vector<CC_TreeNodeEdge<T_IOSymbol, T_Register, T_Tag>*> p_outgoing_node_edges; //!< Outgoing edges+node pointers
     CC_TreeNodeEdge_FA<T_IOSymbol, T_Register, T_Tag, N_k> *p_incoming_node_edge; //!< Pointer to the incoming edge+node
-    T_IOSymbol in_symbol; //!< Input symbol corresponding to the edge
-    float path_metric; //!< Path metric to the node
-    float incoming_edge_metric; //!< metric of the incoming edge to the node
-    int depth; //!< Depth of node in the tree: 0 = root
-    std::array<T_Register, N_k> registers; //!< state of encoder registers at node
-    bool on_final_path; //!< Marks node when backtracking the solution
-    T_Tag tag; //!< Optional and versatile object to tag the node+edge
 };
 
 } // namespace ccsoft

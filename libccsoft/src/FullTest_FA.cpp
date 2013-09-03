@@ -535,6 +535,8 @@ int main(int argc, char *argv[])
                 
                 cc_decoding->print_stats(std::cout, success);
             }
+            
+            delete cc_decoding;
         }
         catch (ccsoft::CCSoft_Exception& e)
         {

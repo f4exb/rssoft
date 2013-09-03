@@ -31,21 +31,36 @@
 
 int main(int argc, char *argv[])
 {
+    std::cout << "unsigned int .....: " << sizeof(unsigned int) << " bytes" << std::endl;
+    std::cout << "unsigned int* ....: " << sizeof(unsigned int*) << " bytes" << std::endl;
+    std::cout << std::endl;
+
     std::cout << "<unsigned int, unsigned int, empty>" << std::endl;
     std::cout << "TreeNode .........: " << sizeof(ccsoft::CC_TreeNode<unsigned int, unsigned int, ccsoft::CC_TreeEdgeTag_Empty>) << " bytes" << std::endl;
     std::cout << "TreeEdge .........: " << sizeof(ccsoft::CC_TreeEdge<unsigned int, unsigned int, ccsoft::CC_TreeEdgeTag_Empty>) << " bytes" << std::endl;
     std::cout << "TreeNodeEdge .....: " << sizeof(ccsoft::CC_TreeNodeEdge<unsigned int, unsigned int, ccsoft::CC_TreeNodeEdgeTag_Empty>) << " bytes" << std::endl;
+    std::cout << std::endl;
 
     std::cout << "<unsigned int, unsigned int, bool>" << std::endl;
     std::cout << "TreeNode .........: " << sizeof(ccsoft::CC_TreeNode<unsigned int, unsigned int, bool>) << " bytes" << std::endl;
     std::cout << "TreeEdge .........: " << sizeof(ccsoft::CC_TreeEdge<unsigned int, unsigned int, bool>) << " bytes" << std::endl;
     std::cout << "TreeNodeEdge .....: " << sizeof(ccsoft::CC_TreeNodeEdge<unsigned int, unsigned int, bool>) << " bytes" << std::endl;
+    std::cout << std::endl;
 
     std::cout << "<unsigned int, unsigned int, empty, 1>" << std::endl;
-    std::cout << "TreeNodeEdge_FA ..: " << sizeof(ccsoft::CC_TreeNodeEdge_FA<unsigned int, unsigned int, ccsoft::CC_TreeNodeEdge_FA_Tag_Empty, 1>) << " bytes" << std::endl;
+    std::cout << "TreeNodeEdge_FA ..: " << sizeof(ccsoft::CC_TreeNodeEdge_FA<unsigned int, unsigned int, ccsoft::CC_TreeNodeEdgeTag_Empty, 1>) << " bytes" << std::endl;
+    std::cout << std::endl;
 
     std::cout << "<unsigned int, unsigned int, bool, 1>" << std::endl;
     std::cout << "TreeNodeEdge_FA ..: " << sizeof(ccsoft::CC_TreeNodeEdge_FA<unsigned int, unsigned int, bool, 1>) << " bytes" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "<unsigned int, unsigned int, bool, 2>" << std::endl;
+    std::cout << "TreeNodeEdge_FA ..: " << sizeof(ccsoft::CC_TreeNodeEdge_FA<unsigned int, unsigned int, bool, 2>) << " bytes" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "<unsigned int, unsigned int, bool, 3>" << std::endl;
+    std::cout << "TreeNodeEdge_FA ..: " << sizeof(ccsoft::CC_TreeNodeEdge_FA<unsigned int, unsigned int, bool, 3>) << " bytes" << std::endl;
 
     return 0;
 }
