@@ -26,6 +26,7 @@
 
 #include "CC_Encoding_FA.h"
 #include "CC_ReliabilityMatrix.h"
+#include "CC_Interleaver.h"
 
 #include <cmath>
 #include <algorithm>
@@ -88,7 +89,7 @@ bool node_edge_pointer_ordering(T_NodeEdge* n1, T_NodeEdge* n2)
  * \tparam N_k Size of an input symbol in bits (k parameter)
  */
 template<typename T_Register, typename T_IOSymbol, unsigned int N_k>
-class CC_SequentialDecoding_FA
+class CC_SequentialDecoding_FA : public CC_Interleaver<T_IOSymbol>
 {
 public:
     /**

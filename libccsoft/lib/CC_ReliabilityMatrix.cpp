@@ -24,6 +24,7 @@
 #include "CC_ReliabilityMatrix.h"
 #include <iomanip>
 #include <cstring>
+#include <cmath>
 
 namespace ccsoft
 {
@@ -198,4 +199,39 @@ std::ostream& operator <<(std::ostream& os, const CC_ReliabilityMatrix& matrix)
     return os;
 }
 
+// ================================================================================================
+void CC_ReliabilityMatrix::deinterleave()
+{
+	 float *tmp_matrix = new float[_nb_symbols*_message_length];
+     memcpy((void *) tmp_matrix, (void *) _matrix, _nb_symbols*_message_length*sizeof(float));
+
+     unsigned int index_size = (unsigned int) (log(_message_length)/log(2)) + 1;
+     unsigned int index_max = 1<<index_size;
+     unsigned int new_index, s, iv;
+     unsigned int old_index = 0;
+
+     for (unsigned int i=0; (i<index_max) && (old_index<_message_length); i++)
+     {
+         new_index = 0;
+         s = index_size;
+         iv = i;
+
+         for (; iv; iv >>= 1) // bit reversal
+         {
+             new_index |= iv & 1;
+             new_index <<= 1;
+             s--;
+         }
+
+         new_index >>= 1; // the last shift right was too much
+         new_index <<= s; // account for leading zeroes
+
+         if (new_index < _message_length)
+         {
+        	 memcpy((void *) &(_matrix[old_index*_nb_symbols]), (void *) &(tmp_matrix[new_index*_nb_symbols]), _nb_symbols*sizeof(float));
+             old_index++;
+         }
+     }
 }
+
+} // namespace ccsoft

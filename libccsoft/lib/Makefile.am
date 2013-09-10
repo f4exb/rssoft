@@ -14,6 +14,7 @@ library_include_HEADERS = \
 	CC_Encoding.h \
 	CC_EncodingRegisters_FA.h \
 	CC_Encoding_FA.h \
+	CC_Interleaver.h \
 	CC_SequentialDecoding.h \
 	CC_SequentialDecoding_FA.h \
 	CC_SequentialDecodingInternal.h \

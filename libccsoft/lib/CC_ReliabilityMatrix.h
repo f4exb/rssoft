@@ -159,6 +159,11 @@ public:
     float find_max_in_col(unsigned int& i_row, unsigned int i_col, float prev_max = 1.0) const;
 
     /**
+     * Deinterleave matrix columns
+     */
+    void deinterleave();
+
+    /**
      * Prints a reliability matrix to an output stream
      */
     friend std::ostream& operator <<(std::ostream& os, const CC_ReliabilityMatrix& matrix);

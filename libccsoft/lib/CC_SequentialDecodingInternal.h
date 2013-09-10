@@ -28,7 +28,6 @@
 #include "CC_ReliabilityMatrix.h"
 #include "CC_TreeGraphviz.h"
 
-#include <cmath>
 #include <algorithm>
 #include <iostream>
 

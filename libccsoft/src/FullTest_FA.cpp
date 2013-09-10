@@ -144,7 +144,8 @@ public:
         fano_delta_metric(1.0),
         fano_tree_cache_size(0),
         edge_bias(0.0),
-        fano_delta_init_threshold(0.0)
+        fano_delta_init_threshold(0.0),
+        interleave(false)
     {}
 
     ~Options()
@@ -176,6 +177,7 @@ public:
     unsigned int fano_tree_cache_size;
     float edge_bias;
     float fano_delta_init_threshold;
+    bool interleave;
 
 private:
     bool parse_generator_polys_data(std::string generator_polys_data_str);
@@ -194,6 +196,7 @@ bool Options::get_options(int argc, char *argv[])
         {
             // these options set a flag
             {"print-seed", no_argument, &indicator_int, 1},
+            {"interleave", no_argument, &indicator_int, 1},
             // these options do not set a flag
             {"snr", required_argument, 0, 'n'},
             {"verbosity", required_argument, 0, 'v'},
@@ -222,6 +225,10 @@ bool Options::get_options(int argc, char *argv[])
                 if (strcmp("print-seed", long_options[option_index].name) == 0)
                 {
                     print_seed = true;
+                }
+                else if (strcmp("interleave", long_options[option_index].name) == 0)
+                {
+                    interleave = true;
                 }
                 break;
             case 'n':
@@ -487,14 +494,42 @@ int main(int argc, char *argv[])
 
                 std::ostringstream oos;
 
-                for (unsigned int i=0; i<options.input_symbols.size(); i++)
+                if (options.interleave)
                 {
-                    unsigned int out_symbol;
-                    cc_decoding->get_encoding().encode(options.input_symbols[i], out_symbol);
-                    create_symbol_data(symbol_data, nb_symbols, out_symbol, options.snr_dB, options.make_noise);
-                    relmat.enter_symbol_data(symbol_data);
-                    std::cout << options.input_symbols[i] << " ";
-                    oos << out_symbol << " ";
+                	std::vector<unsigned int> out_symbols;
+
+					for (unsigned int i=0; i<options.input_symbols.size(); i++)
+					{
+						unsigned int out_symbol;
+						cc_decoding->get_encoding().encode(options.input_symbols[i], out_symbol);
+						out_symbols.push_back(out_symbol);
+						std::cout << options.input_symbols[i] << " ";
+						oos << out_symbol << " ";
+					}
+
+                	std::cout << std::endl << "interleave" << std::endl;
+					cc_decoding->interleave(out_symbols);
+
+					for (unsigned int i=0; i<out_symbols.size(); i++)
+					{
+						create_symbol_data(symbol_data, nb_symbols, out_symbols[i], options.snr_dB, options.make_noise);
+						relmat.enter_symbol_data(symbol_data);
+					}
+
+                	std::cout << "deinterleave" << std::endl;
+					relmat.deinterleave();
+                }
+                else
+                {
+					for (unsigned int i=0; i<options.input_symbols.size(); i++)
+					{
+						unsigned int out_symbol;
+						cc_decoding->get_encoding().encode(options.input_symbols[i], out_symbol);
+						create_symbol_data(symbol_data, nb_symbols, out_symbol, options.snr_dB, options.make_noise);
+						relmat.enter_symbol_data(symbol_data);
+						std::cout << options.input_symbols[i] << " ";
+						oos << out_symbol << " ";
+					}
                 }
 
                 delete[] symbol_data;

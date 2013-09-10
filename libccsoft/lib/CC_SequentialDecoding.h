@@ -26,6 +26,7 @@
 
 #include "CC_Encoding.h"
 #include "CC_ReliabilityMatrix.h"
+#include "CC_Interleaver.h"
 
 #include <cmath>
 #include <algorithm>
@@ -85,7 +86,7 @@ bool node_edge_pointer_ordering(T_NodeEdge* n1, T_NodeEdge* n2)
  * \tparam T_IOSymbol Type of the input and output symbols
  */
 template<typename T_Register, typename T_IOSymbol>
-class CC_SequentialDecoding
+class CC_SequentialDecoding : public CC_Interleaver<T_IOSymbol>
 {
 public:
     /**
