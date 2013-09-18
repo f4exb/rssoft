@@ -159,13 +159,22 @@ public:
                 << " stack_score = " << get_stack_score()
                 << " #nodes = " << Parent::get_nb_nodes()
                 << " stack_size = " << get_stack_size()
-                << " max depth = " << Parent::get_max_depth() << std::endl;
+                << " max depth = " << Parent::get_max_depth();
+    }
+
+    /**
+     * Print stats summary to an output stream
+     * \param os Output stream
+     * \param success True if decoding was successful
+     */
+    virtual void print_stats_summary(std::ostream& os, bool success)
+    {
         std::cout << "_RES " << (success ? 1 : 0) << ","
                 << Parent::get_score() << ","
                 << get_stack_score() << ","
                 << Parent::get_nb_nodes() << ","
                 << get_stack_size() << ","
-                << Parent::get_max_depth() << std::endl;
+                << Parent::get_max_depth();
     }
 
     /**

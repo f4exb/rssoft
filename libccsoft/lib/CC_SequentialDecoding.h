@@ -260,6 +260,13 @@ public:
     virtual void print_stats(std::ostream& os, bool success) = 0;
 
     /**
+     * Print statistics summary to an output stream
+     * \param os Output stream
+     * \param success true if decoding was successful
+     */
+    virtual void print_stats_summary(std::ostream& os, bool success) = 0;
+
+    /**
      * Decodes given the reliability matrix
      * \param relmat Reference to the reliability matrix
      * \param decoded_message Vector of symbols of retrieved message

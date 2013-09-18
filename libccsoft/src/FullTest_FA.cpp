@@ -569,6 +569,9 @@ int main(int argc, char *argv[])
                 }
                 
                 cc_decoding->print_stats(std::cout, success);
+                std::cout << std::endl;
+                cc_decoding->print_stats_summary(std::cout, success);
+                std::cout << std::endl;
             }
             
             delete cc_decoding;

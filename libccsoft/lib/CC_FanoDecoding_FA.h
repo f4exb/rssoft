@@ -253,14 +253,23 @@ public:
                 << " nodes = " << Parent::get_nb_nodes()
                 << " eff.nodes = " << effective_node_count
                 << " moves = " << nb_moves
-                << " max depth = " << Parent::get_max_depth() << std::endl;
+                << " max depth = " << Parent::get_max_depth();
+    }
+
+    /**
+     * Print stats summary to an output stream
+     * \param os Output stream
+     * \param success True if decoding was successful
+     */
+    virtual void print_stats_summary(std::ostream& os, bool success)
+    {
         std::cout << "_RES " << (success ? 1 : 0) << ","
                 << Parent::get_score() << ","
                 << cur_threshold << ","
                 << Parent::get_nb_nodes() << ","
                 << effective_node_count << ","
                 << nb_moves << ","
-                << Parent::get_max_depth() << std::endl;
+                << Parent::get_max_depth();
     }
 
     /**

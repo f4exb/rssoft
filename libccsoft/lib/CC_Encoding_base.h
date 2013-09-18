@@ -72,6 +72,41 @@ template<>
 void print_symbol<unsigned char>(const unsigned char& sym, std::ostream& os);
 
 /**
+ * Calculate the Convolutional Coding parameters (n,k,m factors)
+ */
+template<typename T_Register>
+void get_cc_parameters(const std::vector<unsigned int>& constraints, 
+    const std::vector<std::vector<T_Register> >& genpoly_representations,
+    unsigned int& n,
+    unsigned int& k,
+    unsigned int& m)
+{
+    unsigned int min_nb_outputs = genpoly_representations[0].size();
+    k = constraints.size();
+    m = 0;
+
+    for (unsigned int ci=0; ci < k; ci++)
+    {
+        if (constraints[ci] > sizeof(T_Register)*8)
+        {
+            throw CCSoft_Exception("One constraint size is too large for the size of the registers");
+        }
+
+        if (genpoly_representations[ci].size() < min_nb_outputs)
+        {
+            min_nb_outputs = genpoly_representations[ci].size();
+        }
+
+        if (constraints[ci] > m)
+        {
+            m = constraints[ci];
+        }
+    }
+
+    n = min_nb_outputs;
+}
+
+/**
  * \brief Convolutional encoding class. Supports any k,n with k<n.
  * The input bits of a symbol are clocked simultaneously into the right hand side, or least significant position of the internal
  * registers. Therefore the given polynomial representation of generators should follow the same convention.
@@ -94,11 +129,11 @@ public:
      * of generators should follow the same convention.
      */
     CC_Encoding_base(const std::vector<unsigned int>& _constraints, const std::vector<std::vector<T_Register> >& _genpoly_representations) :
-        k(_constraints.size()),
         constraints(_constraints),
-        genpoly_representations(_genpoly_representations),
-        m(0)
+        genpoly_representations(_genpoly_representations)
     {
+        get_cc_parameters(constraints, genpoly_representations, n, k, m);
+    
         if (k < 1)
         {
             throw CCSoft_Exception("There must be at least one constraint size");
@@ -114,6 +149,7 @@ public:
             throw CCSoft_Exception("Generator polynomial representations size error");
         }
 
+        /*
         unsigned int min_nb_outputs = genpoly_representations[0].size();
 
         for (unsigned int ci=0; ci < constraints.size(); ci++)
@@ -135,6 +171,7 @@ public:
         }
 
         n = min_nb_outputs;
+        */
 
         if (n <= k)
         {
